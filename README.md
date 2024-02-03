@@ -8,7 +8,7 @@ PSAuthClient is a flexible PowerShell OAuth2.0/OpenID Connect (OIDC) Client.
 ![Auth client in use](docs/images/spotify_auth.gif)
 
 # Install
-The module is available from PSGallery, alternatively [download]() and place the module in '$home\Documents\WindowsPowerShell\Modules or
+The module is available from PSGallery, alternatively [download](https://github.com/alflokken/PSAuthClient/releases/download/v1.0.1/PSAuthClient.zip) and place the module in '$home\Documents\WindowsPowerShell\Modules or
 '$env:ProgramFiles\PowerShell\Modules' manually.
 ```powershell
 Install-Module PSAuthClient -Scope:CurrentUser
