@@ -1,16 +1,32 @@
 param ( 
     $moduleName = "PSAuthClient",
-    $moduleVersion = "0.9.9",
+    $moduleVersion = "1.0.2", # 1.0.1 released 03.02.2024
     $prerelease = $false,
     $basePath = "$PSScriptRoot\..\" 
 )
+
+$releasePath ="$basePath\release\$moduleName\$moduleVersion"
+
+# dependencies
+foreach ( $package in ([XML](Get-Content "$basePath\packages.config")).packages.package ) { 
+    write-debug $package.id
+    New-Item -ItemType Directory -Path "$releasePath\$($package.id).$($package.version)" -Force | Out-Null
+    foreach ( $framework in (Get-ChildItem "$basePath\packages\$($package.id).$($package.version)\lib" -Directory) ) { 
+        write-debug $framework
+        copy-item -Recurse -Path $framework.FullName -Destination "$releasePath\$($package.id).$($package.version)" -Force
+        if ( $package.id -eq "Microsoft.Web.WebView2") {
+            Get-ChildItem -Recurse -path "$basePath\packages\$($package.id).$($package.version)\runtimes\win-x64\native\" | copy-item -Destination "$releasePath\$($package.id).$($package.version)\$($framework.Name)\" -Force 
+        }
+    }
+}
+
+if ( !(test-path $releasePath) ) { New-Item -ItemType Directory -Path $releasePath -Force | Out-Null }
 
 $filesToRollup = @()
 "$basePath\src\" | %{ $filesToRollup += Get-ChildItem $_ -filter *.ps1 -Recurse | where { $_.FullName -notmatch "\\((module(s)?)|script(s)?)\\" } }
 $filesToRollup = ($filesToRollup | sort name).FullName | sort -Unique
 
 $cmdLetBlob = @()
-$functionBlob = @()
 $aliasBlob = @()
 $contentArray = @()
 foreach ( $file in $filesToRollup ) { 
@@ -24,23 +40,23 @@ foreach ( $file in $filesToRollup ) {
         $aliasBlob += $content | where { $_ -match "\[Alias\(" -and $_ -notmatch "^#|#\[Alias\(" } 
     }
 }
-$cmdLetBlob += $functionBlob
+
 # export module
-Set-Content -Path "$basePath\release\$moduleName.psm1" -Value $contentArray -Debug:$true -Confirm:$false
+Set-Content -Path "$releasePath\$moduleName.psm1" -Value $contentArray -Debug:$true -Confirm:$false
 
 # files to include in manifest
-$fileList = Get-ChildItem $basePath\release -Directory | % { Get-ChildItem -Recurse $_.fullname -File } 
+$fileList = Get-ChildItem $releasePath -Directory | % { Get-ChildItem -Recurse $_.fullname -File } 
 
 # scripts to process
 $scriptList = Get-ChildItem "$basePath\src\scripts" -File -Recurse -Filter "*.ps1"
-$scriptList | Copy-Item -Destination "$basePath\release" -Force
+$scriptList | Copy-Item -Destination $releasePath -Force
 
 # build manifest
 $moduleManifest = @{ 
     Author = "Alf Løkken"
     CompanyName = "Intility AS"
     RootModule = "$moduleName.psm1"
-    Path = "$basePath\release\$moduleName.psd1"
+    Path = "$releasePath\$moduleName.psd1"
     ModuleVersion = $moduleVersion
     PowerShellVersion = "5.1"
     CompatiblePSEditions = @('Desktop', 'Core')
@@ -48,15 +64,15 @@ $moduleManifest = @{
     Guid = "a1f1337a-d29e-4ad4-acb7-c39bece2d747"
     Description = "PowerShell Authentication Client (OAuth2.0/OIDC)"
     Copyright = "(c) Alf Løkken. All rights reserved."
-    Tags = @("OAuth2.0","OAuth","OIDC","OpenID","Open ID Connect","Authentication","Authorization","AuthN","AuthZ","PKCE","WebView2","JWT")
+    Tags = @("OAuth2.0","OAuth","OIDC","OpenID","OpenIDConnect","Authentication","Authorization","AuthN","AuthZ","PKCE","WebView2","JWT")
     LicenseUri = "https://raw.githubusercontent.com/alflokken/PSAuthClient/main/LICENSE"
-    ProjectUri = "https://raw.githubusercontent.com/alflokken/PSAuthClient"
+ProjectUri = "https://raw.githubusercontent.com/alflokken/PSAuthClient"
     CmdletsToExport = ( ($cmdLetBlob -replace "function\s+") -replace "(\s+)?{(\s+)?" | sort ) 
     FunctionsToExport = ( ($cmdLetBlob -replace "function\s+") -replace "(\s+)?{(\s+)?" | sort ) 
     AliasesToExport = (( ( ($aliasBlob -replace "(\s+)?\[Alias\([('|`")]") -replace "('|`")" ) -replace "\)]" ) -split ",")
-    FileList = ($fileList.FullName -replace ("$basePath\release\" -replace "\\","\\"),".\") | sort
+    FileList = $fileList.FullName -replace ".*$moduleName\\$moduleVersion\\" | sort
     ScriptsToProcess = $scriptlist.FullName -replace ".*\\scripts\\",".\"
 }
 if ( $prerelease ) { $moduleManifest.Prerelease = "preview" }
 New-ModuleManifest @moduleManifest
-return "$modulename-$($moduleversion): $([int]((Get-Item "$basePath\release\$moduleName.psm1").Length/1024))kb rolled up to release ($($contentArray.count) lines in $($filesToRollup.count) files with $($cmdLetBlob.Count) functions)"
+return "$modulename-$($moduleversion): $([int]((Get-Item "$releasePath\$moduleName.psm1").Length/1024))kb rolled up to release ($($contentArray.count) lines in $($filesToRollup.count) files with $($cmdLetBlob.Count) functions)"

@@ -1,8 +1,10 @@
-param ( [string]$ModulePath = "$PSScriptRoot\..\release\PSAuthClient.psd1" )
-
+param ( 
+    $moduleName = "PSAuthClient",
+    $moduleVersion = "1.0.2" # 1.0.1 released 03.02.2024    
+)
 BeforeAll {
     try { 
-        Import-Module $ModulePath -ErrorAction Stop 
+        Import-Module "$PSScriptRoot\..\release\$moduleName\$moduleVersion\$moduleName.psd1" -ErrorAction Stop 
         # load Invoke-Cache from gist
         if ( !(Get-Command Invoke-Cache -ErrorAction SilentlyContinue) ) { 
             Invoke-Expression (Invoke-RestMethod "https://gist.github.com/alflokken/af4f98b5477415a191c3a99e3866123c/raw/8e90d6ec878bc569cf5d058dee74b9edb6b012c6/Invoke-Cache.ps1") 

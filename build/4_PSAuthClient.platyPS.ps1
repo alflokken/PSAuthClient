@@ -1,7 +1,12 @@
-param ( $basePath = "$PSScriptRoot\..\" )
+param ( 
+    $moduleName = "PSAuthClient",
+    $moduleVersion = "1.0.2", # 1.0.1 released 03.02.2024
+    $basePath = "$PSScriptRoot\..\" 
+)
+
 # build doc from comment based help
 try { 
-    Import-Module "$basePath\release\PSAuthClient.psd1" -Force
+    Import-Module "$basePath\release\$moduleName\$moduleVersion\PSAuthClient.psd1" -Force
     #Update-MarkdownHelp "$modulePath\docs" | Out-Null
     Get-ChildItem "$basePath\docs" -Recurse -Filter *.md | remove-item -Force
     new-MarkdownHelp -Module PSAuthClient -OutputFolder "$basePath\docs\" -Debug

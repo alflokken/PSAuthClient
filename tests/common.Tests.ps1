@@ -1,4 +1,8 @@
-param ( [string]$ModulePath = "$PSScriptRoot\..\release\PSAuthClient.psd1" )
+param ( 
+    $moduleName = "PSAuthClient",
+    $moduleVersion = "1.0.2" # 1.0.1 released 03.02.2024    
+)
+$ModulePath = "$PSScriptRoot\..\release\$moduleName\$moduleVersion\$moduleName.psd1" 
 BeforeAll {
     # build settings from json
     $config = Get-Content "$PSScriptRoot\clientConfiguration.json" | ConvertFrom-Json
