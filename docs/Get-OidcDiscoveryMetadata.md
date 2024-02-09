@@ -24,8 +24,9 @@ Retreive OpenID Connect Discovery endpoint metadata.
 ### EXAMPLE 1
 ```powershell
 Get-OidcDiscoveryMetadata "https://example.org"
-Attempts to retreive OpenID Connect Discovery endpoint metadata from 'https://example.org/.well-known/openid-configuration'.
 ```
+Attempts to retreive OpenID Connect Discovery endpoint metadata from 'https://example.org/.well-known/openid-configuration'.
+
 
 ### EXAMPLE 2
 ```powershell
