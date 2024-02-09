@@ -45,7 +45,6 @@ function Invoke-OAuth2TokenEndpoint {
     .EXAMPLE
     PS> $code = Invoke-OAuth2AuthorizationEndpoint -uri $authorization_endpoint @splat
     PS> Invoke-OAuth2TokenEndpoint -uri $token_endpoint @code
-
     token_type      : Bearer
     scope           : User.Read profile openid email
     expires_in      : 4948
@@ -59,7 +58,6 @@ function Invoke-OAuth2TokenEndpoint {
 
     .EXAMPLE 
     PS> Invoke-OAuth2TokenEndpoint -uri $token_endpoint -scope ".default" -client_id "123" -client_secret "secret"
-
     token_type      : Bearer
     expires_in      : 3599
     ext_expires_in  : 3599
@@ -70,7 +68,6 @@ function Invoke-OAuth2TokenEndpoint {
 
     .EXAMPLE
     PS> Invoke-OAuth2TokenEndpoint -uri $token_endpoint -scope ".default" -client_id "123" "Cert:\CurrentUser\My\8kge399dddc5521e04e34ac19fe8f8759ba021b8"
-    
     token_type      : Bearer
     expires_in      : 3599
     ext_expires_in  : 3599
@@ -124,13 +121,16 @@ function Invoke-OAuth2TokenEndpoint {
 
         [parameter( Mandatory = $false, ParameterSetName='code')]
         [parameter( Mandatory = $true, ParameterSetName='client_secret')]
+        [parameter( Mandatory = $false, ParameterSetName='refresh')]
         $client_secret,
 
         [parameter( Mandatory = $false, ParameterSetName='client_secret', HelpMessage="client_credential type")]
+        [parameter( Mandatory = $false, ParameterSetName='refresh')]
         [ValidateSet('client_secret_basic','client_secret_post','client_secret_jwt')]
         $client_auth_method = "client_secret_post",
 
         [parameter( Mandatory = $true, ParameterSetName='client_certificate', HelpMessage="private_key_jwt")]
+        [parameter( Mandatory = $false, ParameterSetName='refresh', HelpMessage="private_key_jwt")]
         $client_certificate,
 
         [parameter( Mandatory = $false, ParameterSetName='client_secret_basic')]
@@ -141,7 +141,7 @@ function Invoke-OAuth2TokenEndpoint {
         [parameter( Mandatory = $false, ParameterSetName='refresh')]
         [string]$nonce,
 
-        [parameter( Mandatory = $true, ParameterSetName='refresh', HelpMessage="Client secret (optional).")]
+        [parameter( Mandatory = $true, ParameterSetName='refresh')]
         $refresh_token
     )
 
@@ -155,7 +155,7 @@ function Invoke-OAuth2TokenEndpoint {
     if ( $client_id ) { $requestBody.client_id = $client_id }
     if ( $redirect_uri ) { $requestBody.redirect_uri = $redirect_uri }
     if ( $scope ) { $requestBody.scope = $scope }
-    if ( ( $client_secret -or $client_certificate) -and !$code ) { 
+    if ( ( $client_secret -or $client_certificate) -and !$code -and !$refresh_token ) { 
         $requestBody.grant_type = "client_credentials" 
     }
     elseif ( $code ) { 
