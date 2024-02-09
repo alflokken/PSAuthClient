@@ -28,30 +28,27 @@ OIDC and OAUTH2 Grants such as Authorization Code Flow with PKCE, Implicit Flow 
 ### EXAMPLE 1
 ```powershell
 Invoke-OAuth2AuthorizationEndpoint -uri "https://acc.spotify.com/authorize" -client_id "2svXwWbFXj" -scope "user-read-currently-playing" -redirect_uri "http://localhost"
-    
 code_verifier                  xNTKRgsEy_u2Y.PQZTmUbccYd~gp7-5v4HxS7HVKSD2fE.uW_yu77HuA-_sOQ...
 redirect_uri                   https://localhost
 client_id                      2svXwWbFXj
 code                           AQDTWHSP6e3Hx5cuJh_85r_3m-s5IINEcQZzjAZKdV4DP_QRqSHJzK_iNB_hN...
 ```
 
-A request for user authorization is sent to the /authorize endpoint along with a code_challenge, code_challenge_method and state param.
-If successful, the authorization server 
-will redirect back to the redirect_uri with a code which can be exchanged for an access token.
+A request for user authorization is sent to the /authorize endpoint along with a code_challenge, code_challenge_method and state param. 
+If successful, the authorization server will redirect back to the redirect_uri with a code which can be exchanged for an access token.
 
 ### EXAMPLE 2
 ```powershell
 Invoke-OAuth2AuthorizationEndpoint -uri "https://example.org/oauth2/authorize" -client_id "0325" -redirect_uri "http://localhost" -scope "user.read" -response_type "token" -usePkce:$false -customParameters @{ login = "none" }
-```
-
 expires_in                     4146
 expiry_datetime                01.02.2024 10:56:06
 scope                          User.Read profile openid email
 session_state                  5c044a21-543e-4cbc-a94r-d411ddec5a87
 access_token                   eyJ0eXAiQiJKV1QiLCJub25jZSI6InAxYTlHksH6bktYdjhud3VwMklEOGtUM...
 token_type                     Bearer
+```
 
-Implicit grant flow
+Implicit Grant, will return a access_token if successful.
 
 ## PARAMETERS
 
@@ -71,7 +68,7 @@ Accept wildcard characters: False
 ```
 
 ### -client_id
-The identifier of the client at the authorisation server.
+The identifier of the client at the authorization server.
 
 ```yaml
 Type: String
@@ -86,7 +83,7 @@ Accept wildcard characters: False
 ```
 
 ### -redirect_uri
-The client callback URI for the authorisation response.
+The client callback URI for the authorization response.
 
 ```yaml
 Type: String
@@ -165,7 +162,7 @@ Accept wildcard characters: False
 
 ### -customParameters
 Hashtable with custom parameters to be added to the request uri (e.g.
-domain_hint, prompt, etc.)
+domain_hint, prompt, etc.) both the key and value will be url encoded.
 
 ```yaml
 Type: Hashtable
