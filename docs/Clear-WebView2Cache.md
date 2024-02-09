@@ -24,8 +24,9 @@ Removes PSAuthClient WebView2 user data folder (UDF) which is used to store brow
 ### EXAMPLE 1
 ```powershell
 Clear-WebView2Cache
-Deletes the WebView2 cache folder.
 ```
+Deletes the WebView2 cache folder.
+
 
 ## PARAMETERS
 
