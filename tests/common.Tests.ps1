@@ -1,13 +1,16 @@
 param ( 
     $moduleName = "PSAuthClient",
-    $moduleVersion = "1.0.2" # 1.0.1 released 03.02.2024    
+    $moduleVersion = "1.1.0"   
 )
 $ModulePath = "$PSScriptRoot\..\release\$moduleName\$moduleVersion\$moduleName.psd1" 
 BeforeAll {
     # build settings from json
     $config = Get-Content "$PSScriptRoot\clientConfiguration.json" | ConvertFrom-Json
     $splat = @{};foreach ( $property in $config.splat.PSObject.Properties ) { $splat[$property.Name] = $property.Value }
-    $splat.customParameters = @{ prompt = "login" }
+    $splat.customParameters = @{ 
+        prompt = "login" 
+        login_hint = $config.userPrincipalName
+    }
 
 }
 Import-Module $ModulePath -ErrorAction Stop

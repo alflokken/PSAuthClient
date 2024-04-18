@@ -1,6 +1,6 @@
 param ( 
     $moduleName = "PSAuthClient",
-    $moduleVersion = "1.0.2" # 1.0.1 released 03.02.2024    
+    $moduleVersion = "1.1.0"   
 )
 BeforeAll {
     try { 
@@ -29,7 +29,7 @@ Describe "Authorization Code Grant" {
     context "Authorization Code Grant with Proof Key for Code Exchange (PKCE)." { 
         BeforeAll { 
             $code = Invoke-OAuth2AuthorizationEndpoint -uri $config.authorization_endpoint @splat 
-            $token = Invoke-OAuth2TokenEndpoint -uri $config.token_endpoint @code
+            $token = Invoke-OAuth2TokenEndpoint -uri $config.token_endpoint @code -customHeaders @{ "User-Agent" = "PSAuthClient/1.0.3" }
         }
         It "Authorization should return a code and code_verifier." { 
             $code.code | Should -Not -BeNullOrEmpty
