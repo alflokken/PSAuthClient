@@ -1,6 +1,6 @@
 param ( 
     $moduleName = "PSAuthClient",
-    $moduleVersion = "1.0.2", # 1.0.1 released 03.02.2024
+    $moduleVersion = "1.1.0",
     $prerelease = $false,
     $basePath = "$PSScriptRoot\..\" 
 )
