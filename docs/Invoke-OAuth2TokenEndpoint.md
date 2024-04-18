@@ -16,49 +16,34 @@ Token Exchange by OAuth2.0 Token Endpoint interaction.
 ```powershell
 Invoke-OAuth2TokenEndpoint [-uri] <String> [-client_id <String>] [-redirect_uri <String>] [-scope <String>]
  [-code <String>] [-code_verifier <String>] [-client_secret <Object>] [-nonce <String>]
- [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ [-customHeaders <Hashtable>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ### refresh
 ```powershell
 Invoke-OAuth2TokenEndpoint [-uri] <String> [-client_id <String>] [-redirect_uri <String>] [-scope <String>]
  [-client_secret <Object>] [-client_auth_method <Object>] [-client_certificate <Object>] [-nonce <String>]
- -refresh_token <Object> [-ProgressAction <ActionPreference>] [<CommonParameters>]
-```
-
-### client_certificate
-```powershell
-Invoke-OAuth2TokenEndpoint [-uri] <String> [-client_id <String>] [-redirect_uri <String>] [-scope <String>]
- [-code <String>] [-code_verifier <String>] -client_certificate <Object> [-nonce <String>]
- [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ -refresh_token <Object> [-customHeaders <Hashtable>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ### device_code
 ```powershell
 Invoke-OAuth2TokenEndpoint [-uri] <String> [-client_id <String>] -device_code <String>
- [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ [-customHeaders <Hashtable>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ### client_secret
 ```powershell
 Invoke-OAuth2TokenEndpoint [-uri] <String> [-client_id <String>] [-redirect_uri <String>] [-scope <String>]
  [-code <String>] [-code_verifier <String>] -client_secret <Object> [-client_auth_method <Object>]
- [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ [-nonce <String>] [-customHeaders <Hashtable>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
-### client_secret_jwt
+### client_certificate
 ```powershell
-Invoke-OAuth2TokenEndpoint [-nonce <String>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
-```
-
-### client_secret_post
-```powershell
-Invoke-OAuth2TokenEndpoint [-nonce <String>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
-```
-
-### client_secret_basic
-```powershell
-Invoke-OAuth2TokenEndpoint [-nonce <String>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
+Invoke-OAuth2TokenEndpoint [-uri] <String> [-client_id <String>] [-redirect_uri <String>] [-scope <String>]
+ [-code <String>] [-code_verifier <String>] -client_certificate <Object> [-nonce <String>]
+ [-customHeaders <Hashtable>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -79,6 +64,7 @@ refresh_token   : 0.AUcAjvFfm8BTokWLwpwMkH65xiGBP5hz2ZpErJuc3chlhOUNAVw.AgABAAEA
 id_token        : eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImtXYmthYTZxczh3c1RuQndpaU5ZT2...
 expiry_datetime : 01.02.2024 12:51:33
 ```
+
 Invokes the Token Endpoint by passing parameters from the authorization endpoint response such as code, code_verifier, nonce, etc.
 
 ### EXAMPLE 2
@@ -112,7 +98,7 @@ Authorization endpoint URL.
 
 ```yaml
 Type: String
-Parameter Sets: code, refresh, client_certificate, device_code, client_secret
+Parameter Sets: (All)
 Aliases:
 
 Required: True
@@ -128,7 +114,7 @@ The identifier of the client at the authorisation server.
 
 ```yaml
 Type: String
-Parameter Sets: code, refresh, client_certificate, device_code, client_secret
+Parameter Sets: (All)
 Aliases:
 
 Required: False
@@ -144,7 +130,7 @@ The client callback URI for the response.
 
 ```yaml
 Type: String
-Parameter Sets: code, refresh, client_certificate, client_secret
+Parameter Sets: code, refresh, client_secret, client_certificate
 Aliases:
 
 Required: False
@@ -159,7 +145,7 @@ One or more space-separated strings indicating which permissions the application
 
 ```yaml
 Type: String
-Parameter Sets: code, refresh, client_certificate, client_secret
+Parameter Sets: code, refresh, client_secret, client_certificate
 Aliases:
 
 Required: False
@@ -174,7 +160,7 @@ Authorization code received from the authorization server.
 
 ```yaml
 Type: String
-Parameter Sets: code, client_certificate, client_secret
+Parameter Sets: code, client_secret, client_certificate
 Aliases:
 
 Required: False
@@ -189,7 +175,7 @@ Code_verifier, required if code_challenge was used in the authorization request 
 
 ```yaml
 Type: String
-Parameter Sets: code, client_certificate, client_secret
+Parameter Sets: code, client_secret, client_certificate
 Aliases:
 
 Required: False
@@ -289,7 +275,7 @@ OPTIONAL nonce value used to associate a Client session with an ID Token, and to
 
 ```yaml
 Type: String
-Parameter Sets: code, refresh, client_certificate, client_secret_jwt, client_secret_post, client_secret_basic
+Parameter Sets: code, refresh, client_secret, client_certificate
 Aliases:
 
 Required: False
@@ -308,6 +294,22 @@ Parameter Sets: refresh
 Aliases:
 
 Required: True
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -customHeaders
+Hashtable with custom headers to be added to the request uri (e.g.
+User-Agent, Origin, Referer, etc.).
+
+```yaml
+Type: Hashtable
+Parameter Sets: (All)
+Aliases:
+
+Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False

@@ -42,6 +42,9 @@ function Invoke-OAuth2TokenEndpoint {
     .PARAMETER refresh_token
     Refresh token received from the authorization server.
 
+    .PARAMETER customHeaders
+    Hashtable with custom headers to be added to the request uri (e.g. User-Agent, Origin, Referer, etc.).
+
     .EXAMPLE
     PS> $code = Invoke-OAuth2AuthorizationEndpoint -uri $authorization_endpoint @splat
     PS> Invoke-OAuth2TokenEndpoint -uri $token_endpoint @code
@@ -80,47 +83,47 @@ function Invoke-OAuth2TokenEndpoint {
     [Alias('Invoke-TokenEndpoint','token')]
     [cmdletbinding(DefaultParameterSetName='code')]
     param(
+        [parameter( Position = 0, Mandatory = $true, ParameterSetName='client_certificate')]    
         [parameter( Position = 0, Mandatory = $true, ParameterSetName='client_secret')]
         [parameter( Position = 0, Mandatory = $true, ParameterSetName='code')]
         [parameter( Position = 0, Mandatory = $true, ParameterSetName='device_code')]
-        [parameter( Position = 0, Mandatory = $true, ParameterSetName='client_certificate')]
         [parameter( Position = 0, Mandatory = $true, ParameterSetName='refresh')]
         [string]$uri,
 
+        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
         [parameter( Mandatory = $false, ParameterSetName='client_secret')]
         [parameter( Mandatory = $false, ParameterSetName='code')]
         [parameter( Mandatory = $false, ParameterSetName='device_code')]
-        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
         [parameter( Mandatory = $false, ParameterSetName='refresh')]
         [string]$client_id,
 
+        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
         [parameter( Mandatory = $false, ParameterSetName='client_secret')]
         [parameter( Mandatory = $false, ParameterSetName='code')]
-        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
         [parameter( Mandatory = $false, ParameterSetName='refresh')]
         [string]$redirect_uri,
 
+        [parameter(Mandatory = $false, ParameterSetName='client_certificate')]
         [parameter(Mandatory = $false, ParameterSetName='client_secret')]
         [parameter(Mandatory = $false, ParameterSetName='code')]
-        [parameter(Mandatory = $false, ParameterSetName='client_certificate')]
         [parameter(Mandatory = $false, ParameterSetName='refresh')]
         [string]$scope,
 
+        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
         [parameter( Mandatory = $false, ParameterSetName='client_secret')]
         [parameter( Mandatory = $false, ParameterSetName='code')]
-        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
         [string]$code,
 
+        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
         [parameter( Mandatory = $false, ParameterSetName='client_secret')]
         [parameter( Mandatory = $false, ParameterSetName='code')]
-        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
         [string]$code_verifier,
 
         [parameter( Mandatory = $true, ParameterSetName='device_code')]
         [string]$device_code,
 
-        [parameter( Mandatory = $false, ParameterSetName='code')]
         [parameter( Mandatory = $true, ParameterSetName='client_secret')]
+        [parameter( Mandatory = $false, ParameterSetName='code')]
         [parameter( Mandatory = $false, ParameterSetName='refresh')]
         $client_secret,
 
@@ -133,22 +136,33 @@ function Invoke-OAuth2TokenEndpoint {
         [parameter( Mandatory = $false, ParameterSetName='refresh', HelpMessage="private_key_jwt")]
         $client_certificate,
 
-        [parameter( Mandatory = $false, ParameterSetName='client_secret_basic')]
-        [parameter( Mandatory = $false, ParameterSetName='client_secret_post')]
-        [parameter( Mandatory = $false, ParameterSetName='client_secret_jwt')]
-        [parameter( Mandatory = $false, ParameterSetName='code')]
         [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
+        [parameter( Mandatory = $false, ParameterSetName='client_secret')]
+        [parameter( Mandatory = $false, ParameterSetName='code')]
         [parameter( Mandatory = $false, ParameterSetName='refresh')]
         [string]$nonce,
 
         [parameter( Mandatory = $true, ParameterSetName='refresh')]
-        $refresh_token
+        $refresh_token,
+
+        [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
+        [parameter( Mandatory = $false, ParameterSetName='client_secret')]
+        [parameter( Mandatory = $false, ParameterSetName='code')]
+        [parameter( Mandatory = $false, ParameterSetName='device_code')]
+        [parameter( Mandatory = $false, ParameterSetName='refresh')]
+        [hashtable]$customHeaders
     )
 
     $payload = @{}
     $payload.headers = @{ 'Content-Type' = 'application/x-www-form-urlencoded' }
     $payload.method  = 'Post'
     $payload.uri     =  $uri
+
+    # Custom headers provided
+    if ( $customHeaders ) { 
+        if ( $customHeaders.Keys -contains "Content-Type" ) { $payload.headers = $customHeaders }
+        else { $payload.headers += $customHeaders }
+    }
     
     # Build request body and determine grant_type
     $requestBody = @{}
