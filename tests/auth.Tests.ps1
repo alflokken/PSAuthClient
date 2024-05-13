@@ -1,10 +1,11 @@
 param ( 
     $moduleName = "PSAuthClient",
-    $moduleVersion = "1.1.0"   
+    [Parameter(Mandatory=$true)]$moduleVersion = "1.1.1",
+    [Parameter(Mandatory=$true)][string]$configFile
 )
 BeforeAll {
     try { 
-        Import-Module "$PSScriptRoot\..\release\$moduleName\$moduleVersion\$moduleName.psd1" -ErrorAction Stop 
+        Import-Module "$PSScriptRoot\..\release\$moduleName\$moduleVersion\$moduleName.psd1" -ErrorAction Stop
         # load Invoke-Cache from gist
         if ( !(Get-Command Invoke-Cache -ErrorAction SilentlyContinue) ) { 
             Invoke-Expression (Invoke-RestMethod "https://gist.github.com/alflokken/af4f98b5477415a191c3a99e3866123c/raw/8e90d6ec878bc569cf5d058dee74b9edb6b012c6/Invoke-Cache.ps1") 
@@ -13,7 +14,7 @@ BeforeAll {
     catch { throw "Failed to load dependencies" }
 
     # build settings from json
-    $config = Get-Content "$PSScriptRoot\clientConfiguration.json" | ConvertFrom-Json
+    $config = Get-Content $configFile | ConvertFrom-Json
     $config.client_secret = (Invoke-Cache -keyname $config.client_secret -asSecureString)
 
     $splat = @{};foreach ( $property in $config.splat.PSObject.Properties ) { $splat[$property.Name] = $property.Value }
@@ -103,11 +104,11 @@ Describe "Authorization Code Grant" {
         }
     }
 }
-Describe "Refresh Token Grant" {
+Describe "Refresh Token Grant (state, nonce and pkce as custom parameters)" {
     BeforeAll { 
         $splat.redirect_uri = "https://login.microsoftonline.com/common/oauth2/nativeclient"
-        $code = Invoke-OAuth2AuthorizationEndpoint -uri $config.authorization_endpoint @splat 
-        $token = Invoke-OAuth2TokenEndpoint -uri $config.token_endpoint @code
+        $code = Invoke-OAuth2AuthorizationEndpoint -uri $config.authorization_endpoint -client_id $splat.client_id -scope $splat.scope -redirect_uri $splat.redirect_uri -customParameters @{ prompt = "none";state = "123456"; nonce = "123456"; code_challenge = "LumqN9rlKGYcNVii_ySeJPVCxA_NBl9b2CGC54Qg1D8" }
+        $token = Invoke-OAuth2TokenEndpoint -uri $config.token_endpoint @code -code_verifier "8NeBSoR~K2yhd-Pz_mV~XX8qjGTRGQ5Wu9WFpM5CpN8o72ib3jfGyB-z9PoGJUF-xg9p-V"
         $token = Invoke-OAuth2TokenEndpoint -uri $config.token_endpoint -refresh_token $token.refresh_token -client_id $splat.client_id -scope $splat.scope -nonce $code.nonce 
     }
     It "refresh_token code exchange should return a 'id_token', 'access_token' and 'refresh_token'." { 

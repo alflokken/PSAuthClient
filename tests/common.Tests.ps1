@@ -1,11 +1,12 @@
 param ( 
     $moduleName = "PSAuthClient",
-    $moduleVersion = "1.1.0"   
+    [Parameter(Mandatory=$true)]$moduleVersion = "1.1.1",
+    [Parameter(Mandatory=$true)][string]$configFile
 )
 $ModulePath = "$PSScriptRoot\..\release\$moduleName\$moduleVersion\$moduleName.psd1" 
 BeforeAll {
     # build settings from json
-    $config = Get-Content "$PSScriptRoot\clientConfiguration.json" | ConvertFrom-Json
+    $config = Get-Content $configFile | ConvertFrom-Json
     $splat = @{};foreach ( $property in $config.splat.PSObject.Properties ) { $splat[$property.Name] = $property.Value }
     $splat.customParameters = @{ 
         prompt = "login" 
@@ -14,6 +15,7 @@ BeforeAll {
 
 }
 Import-Module $ModulePath -ErrorAction Stop
+
 InModuleScope -ModuleName "PSAuthClient" { 
     Describe "Common functions" { 
         It "Should do valid base64 url encoding" { ConvertTo-Base64urlencoding "https://" | should -be "aHR0cHM6Ly8" } 
