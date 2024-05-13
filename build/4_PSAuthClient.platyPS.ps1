@@ -1,6 +1,6 @@
 param ( 
     $moduleName = "PSAuthClient",
-    $moduleVersion = "1.1.0",
+    [Parameter(Mandatory=$true)]$moduleVersion,
     $basePath = "$PSScriptRoot\..\" 
 )
 
