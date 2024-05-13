@@ -161,8 +161,9 @@ Accept wildcard characters: False
 ```
 
 ### -customParameters
-Hashtable with custom parameters to be added to the request uri (e.g.
+Hashtable with custom parameters added to the request uri (e.g.
 domain_hint, prompt, etc.) both the key and value will be url encoded.
+Provided with state, nonce or PKCE keys these values are used in the request (otherwise values are generated accordingly).
 
 ```yaml
 Type: Hashtable

@@ -30,7 +30,7 @@ function Invoke-OAuth2AuthorizationEndpoint {
     OPTIONAL Informs the Authorization Server of the mechanism to be used for returning Authorization Response. Determined by response_type, if not specified.
 
     .PARAMETER customParameters
-    Hashtable with custom parameters to be added to the request uri (e.g. domain_hint, prompt, etc.) both the key and value will be url encoded.
+    Hashtable with custom parameters added to the request uri (e.g. domain_hint, prompt, etc.) both the key and value will be url encoded. Provided with state, nonce or PKCE keys these values are used in the request (otherwise values are generated accordingly).
 
     .EXAMPLE
     PS> Invoke-OAuth2AuthorizationEndpoint -uri "https://acc.spotify.com/authorize" -client_id "2svXwWbFXj" -scope "user-read-currently-playing" -redirect_uri "http://localhost"
@@ -84,24 +84,22 @@ function Invoke-OAuth2AuthorizationEndpoint {
     )
 
     # Determine which protocol is being used.
-    if ( $response_type -eq "token" -or ($response_type -match "^code$" -and $scope -notmatch "openid" ) ) { 
-        $protocol = "OAUTH" 
-        $nonce = $null
-    }
+    if ( $response_type -eq "token" -or ($response_type -match "^code$" -and $scope -notmatch "openid" ) ) { $protocol = "OAUTH"; $nonce = $null }
     else { $protocol = "OIDC"
         # ensure scope contains openid for oidc flows
         if ( $scope -notmatch "openid" ) { Write-Warning "Invoke-OAuth2AuthorizationRequest: Added openid scope to request (OpenID requirement)."; $scope += " openid" }
-        # generate nonce for id_token validation
-        [string]$nonce = Get-RandomString -Length ( (32..64) | get-random )
-        Write-Verbose "Invoke-OAuth2AuthorizationRequest: adding nonce $nonce to request (OIDC flow)."
+        # ensure nonce is present for id_token validation
+        if ( $customParameters -and $customParameters.Keys -match "^nonce$" ) { [string]$nonce = $customParameters["nonce"] }
+        else { [string]$nonce = Get-RandomString -Length ( (32..64) | get-random ) }
     }
 
-    # generate state for CSRF protection (optional, but recommended)
-    [string]$state = Get-RandomString -Length ( (16..21) | get-random )
+    # state for CSRF protection (optional, but recommended)
+    if ( $customParameters -and $customParameters.Keys -match "^state$" ) { [string]$state = $customParameters["state"] }
+    else { [string]$state = Get-RandomString -Length ( (16..21) | get-random ) }
     
-    # begin building the request uri
+    # building the request uri
     Add-Type -AssemblyName System.Web -ErrorAction Stop
-    $uri += "?response_type=$([System.Web.HttpUtility]::UrlEncode($response_type))&client_id=$([System.Web.HttpUtility]::UrlEncode($client_id))&state=$([System.Web.HttpUtility]::UrlEncode($state))"
+    $uri += "?response_type=$($response_type)&client_id=$([System.Web.HttpUtility]::UrlEncode($client_id))&state=$([System.Web.HttpUtility]::UrlEncode($state))"
     if ( $redirect_uri ) { $uri += "&redirect_uri=$([System.Web.HttpUtility]::UrlEncode($redirect_uri))" } 
     if ( $scope ) { $uri += "&scope=$([System.Web.HttpUtility]::UrlEncode($scope))" }
     if ( $nonce ) { $uri += "&nonce=$([System.Web.HttpUtility]::UrlEncode($nonce))" }
@@ -110,14 +108,23 @@ function Invoke-OAuth2AuthorizationEndpoint {
     if ( $response_type -notmatch "code" -and $usePkce ) { write-verbose "Invoke-OAuth2AuthorizationRequest: PKCE is not supported for implicit flows." }
     else { 
         if ( $usePkce ) {
-            $pkce = New-PkceChallenge 
+            # pkce provided in custom parameters
+            if ( $customParameters -and $customParameters.Keys -match "^code_challenge$" ) {
+                $pkce = @{ code_challenge = $customParameters["code_challenge"] }
+                if ( $customParameters.Keys -match "^code_challenge_method$" ) { $pkce.code_challenge_method = $customParameters["code_challenge_method"] }
+                else { Write-Warning "Invoke-OAuth2AuthorizationRequest: code_challenge_method not specified, defaulting to 'S256'."; $pkce.code_challenge_method = "S256" }
+                if ( $customParameters.Keys -match "^code_verifier$" ) { $pkce.code_verifier = $customParameters["code_verifier"] }
+            }
+            # generate new pkce challenge
+            else { $pkce = New-PkceChallenge }
+            # add to request uri
             $uri += "&code_challenge=$($pkce.code_challenge)&code_challenge_method=$($pkce.code_challenge_method)"
         }
     }
 
     # Add custom parameters to request uri
     if ( $customParameters ) { 
-        foreach ( $key in $customParameters.Keys ) { 
+        foreach ( $key in ($customParameters.Keys | Where-Object { $_ -notmatch "^nonce$|^state$|^code_(challenge(_method)?$|verifier)$" }) ) { 
             $urlEncodedValue = [System.Web.HttpUtility]::UrlEncode($customParameters[$key])
             $urlEncodedKey = [System.Web.HttpUtility]::UrlEncode($key)
             $uri += "&$urlEncodedKey=$urlEncodedValue"
@@ -184,10 +191,10 @@ function Invoke-OAuth2AuthorizationEndpoint {
     }
     else { throw "invalid response received" }
 
-    # if code grant, add client_id, code_verifier and redirect_uri to response (needed for token exchange) 
+    # if code grant, add client_id, code_verifier and redirect_uri to output (needed for token exchange) 
     if ( $response_type -match "code" ) {
         $response.client_id = $client_id
-        if ( $usePkce ) { $response.code_verifier = $pkce.code_verifier }
+        if ( $usePkce -and $pkce.Keys -match "^code_verifier$" ) { $response.code_verifier = $pkce.code_verifier }
         if ( $redirect_uri ) { $response.redirect_uri = $redirect_uri }
     }
 
@@ -202,13 +209,13 @@ function Invoke-OAuth2AuthorizationEndpoint {
         Write-Verbose "Invoke-OAuth2TokenExchange: Validated nonce in id_token response."
     }
 
-    # add expiry_datetime to the response
+    # add expiry_datetime to output
     if ( $response.ContainsKey("expires_in") ) { 
         $response["expires_in"] = [int]$response["expires_in"]
         $response.expiry_datetime = (get-date).AddSeconds($response.expires_in) 
     }
 
-    # remove state from response
+    # remove state from output
     if ( $response.ContainsKey("state") ) { $response.Remove("state") }
 
     # badabing badaboom
