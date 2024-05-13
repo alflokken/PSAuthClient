@@ -1,0 +1,14 @@
+{
+  "token_endpoint": "https://login.microsoftonline.com/1b7526e2-f925-449c-b197-f6b9243c0472/oauth2/v2.0/token",
+  "authorization_endpoint": "https://login.microsoftonline.com/1b7526e2-f925-449c-b197-f6b9243c0472/oauth2/v2.0/authorize",
+  "splat": {
+    "scope": "user.read openid offline_access",
+    "redirect_uri": "https://login.microsoftonline.com/common/oauth2/nativeclient",
+    "client_id": "6fdb7e47-b7b7-4990-9e5c-4147c58ff61a",
+    "verbose": false
+  },
+  "tenantId": "1b7526e2-f925-449c-b197-f6b9243c0472",
+  "userPrincipalName": "upn@login_hint.com",
+  "client_certificate": "Cert:\\CurrentUser\\My\\THUMBPRINT",
+  "client_secret": "PSC_Client_Secret"
+}
