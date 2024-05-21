@@ -13,10 +13,11 @@ foreach ( $package in ([XML](Get-Content "$basePath\packages.config")).packages.
     New-Item -ItemType Directory -Path "$releasePath\$($package.id).$($package.version)" -Force | Out-Null
     foreach ( $framework in (Get-ChildItem "$basePath\packages\$($package.id).$($package.version)\lib" -Directory) ) { 
         write-debug $framework
-        copy-item -Recurse -Path $framework.FullName -Destination "$releasePath\$($package.id).$($package.version)" -Force
-        if ( $package.id -eq "Microsoft.Web.WebView2") {
-            Get-ChildItem -Recurse -path "$basePath\packages\$($package.id).$($package.version)\runtimes\win-x64\native\" | copy-item -Destination "$releasePath\$($package.id).$($package.version)\$($framework.Name)\" -Force 
-        }
+        copy-item -Recurse -Path $framework -Destination "$releasePath\$($package.id).$($package.version)" -Force
+    }
+    foreach ( $runtime in (Get-ChildItem "$basePath\packages\$($package.id).$($package.version)\runtimes" -Directory) ) { 
+        Write-Debug $runtime
+        copy-item -Recurse -Path  "$runtime\native\" -Destination "$releasePath\$($package.id).$($package.version)\runtimes\$($runtime.name)\"
     }
 }
 
