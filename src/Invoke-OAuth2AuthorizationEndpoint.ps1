@@ -140,9 +140,7 @@ function Invoke-OAuth2AuthorizationEndpoint {
     }
 
     # authorization request (interactive)
-    if ( $redirect_uri ) { $urlCloseConditionRegex = "$redirect_uri?.*(?:code=([^&]+)|error=([^&]+))|^$redirect_uri" }
-    else { $urlCloseConditionRegex = "error=[^&]*|code=[^&]*|^$redirect_uri" }
-    $webSource = Invoke-WebView2 -uri $uri -UrlCloseConditionRegex $urlCloseConditionRegex -title "Authorization code flow"
+    $webSource = Invoke-WebView2 -uri $uri -UrlCloseConditionRegex "$($redirect_uri)?.*(?:code=([^&]+)|error=([^&]+))|^$redirect_uri" -title "Authorization code flow"
     
     # if form post - retreive job (post) after interaction has been complete
     if ( $response_mode -eq "form_post" ) {
