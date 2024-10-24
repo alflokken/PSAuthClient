@@ -29,8 +29,8 @@ Describe "Prerequisites" {
 Describe "Authorization Code Grant" {
     context "Authorization Code Grant with Proof Key for Code Exchange (PKCE)." { 
         BeforeAll { 
-            $code = Invoke-OAuth2AuthorizationEndpoint -uri $config.authorization_endpoint @splat 
-            $token = Invoke-OAuth2TokenEndpoint -uri $config.token_endpoint @code -customHeaders @{ "User-Agent" = "PSAuthClient/1.0.3" }
+            $code = Invoke-OAuth2AuthorizationEndpoint -uri $config.authorization_endpoint @splat -userAgent "PSAuthClient/$((Get-Module PSAuthClient).Version.ToString())"
+            $token = Invoke-OAuth2TokenEndpoint -uri $config.token_endpoint @code -customHeaders @{ "User-Agent" = "PSAuthClient/$((Get-Module PSAuthClient).Version.ToString())" }
         }
         It "Authorization should return a code and code_verifier." { 
             $code.code | Should -Not -BeNullOrEmpty

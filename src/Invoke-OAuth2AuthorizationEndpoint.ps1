@@ -32,6 +32,9 @@ function Invoke-OAuth2AuthorizationEndpoint {
     .PARAMETER customParameters
     Hashtable with custom parameters added to the request uri (e.g. domain_hint, prompt, etc.) both the key and value will be url encoded. Provided with state, nonce or PKCE keys these values are used in the request (otherwise values are generated accordingly).
 
+    .PARAMETER userAgent
+    OPTIONAL Custom User-Agent string to be used in the WebView2 browser.
+
     .EXAMPLE
     PS> Invoke-OAuth2AuthorizationEndpoint -uri "https://acc.spotify.com/authorize" -client_id "2svXwWbFXj" -scope "user-read-currently-playing" -redirect_uri "http://localhost"
     code_verifier                  xNTKRgsEy_u2Y.PQZTmUbccYd~gp7-5v4HxS7HVKSD2fE.uW_yu77HuA-_sOQ...
@@ -80,7 +83,10 @@ function Invoke-OAuth2AuthorizationEndpoint {
         [string]$response_mode,
 
         [parameter( Mandatory = $false)]
-        [hashtable]$customParameters
+        [hashtable]$customParameters,
+
+        [parameter( Mandatory = $false)]
+        [string]$userAgent
     )
 
     # Determine which protocol is being used.
@@ -140,7 +146,13 @@ function Invoke-OAuth2AuthorizationEndpoint {
     }
 
     # authorization request (interactive)
-    $webSource = Invoke-WebView2 -uri $uri -UrlCloseConditionRegex "$($redirect_uri)?.*(?:code=([^&]+)|error=([^&]+))|^$redirect_uri" -title "Authorization code flow"
+    $webViewParams = @{
+        uri = $uri
+        title = "Authorization code flow"
+        UrlCloseConditionRegex = "$($redirect_uri)?.*(?:code=([^&]+)|error=([^&]+))|^$redirect_uri"
+    }
+    if ( $userAgent ) { $webViewParams.userAgent = $userAgent }
+    $webSource = Invoke-WebView2 @webViewParams
     
     # if form post - retreive job (post) after interaction has been complete
     if ( $response_mode -eq "form_post" ) {

@@ -27,6 +27,9 @@ function Invoke-WebView2 {
     .PARAMETER Height
     (optional, default:800) - Height of the form.
 
+    .PARAMETER userAgent
+    (optional) Only supported for WebView2, will be ignored if failing over to Windows.Forms.WebBrowser.
+
     .EXAMPLE
     PS> Invoke-WebView2 -uri "https://microsoft.com/devicelogin" -UrlCloseConditionRegex "//appverify$" -title "Device Code Flow" | Out-Null
 
@@ -53,7 +56,11 @@ function Invoke-WebView2 {
         [int]$Width = "600",
 
         [parameter( Mandatory = $false, HelpMessage="Forms window height")]
-        [int]$Height = "800"
+        [int]$Height = "800",
+
+        [parameter( Mandatory = $false, HelpMessage="Customize the User-Agent presented in the HTTP Header.")]
+        $userAgent
+    
     )
     # https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.core.corewebview2environmentoptions.allowsinglesignonusingosprimaryaccount?view=webview2-dotnet-1.0.2210.55
     if ( $allowSingleSignOnUsingOSPrimaryAccount ) { $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--enable-features=msSingleSignOnOSForPrimaryAccountIsShared" }
@@ -65,6 +72,7 @@ function Invoke-WebView2 {
         $web.CreationProperties.UserDataFolder = "$env:temp\PSAuthClientWebview2Cache\" 
         $web.Dock = "Fill"
         $web.source = $uri
+        if ( $userAgent ) { $web.add_CoreWebView2InitializationCompleted({$web.CoreWebView2.Settings.UserAgent = $userAgent}) }
         # close form on completion (match redirectUri) navigation
         $web.Add_SourceChanged( {
             if ( $web.source.AbsoluteUri -match $UrlCloseConditionRegex )  { $Form.close() | Out-Null }
