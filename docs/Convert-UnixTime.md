@@ -5,58 +5,70 @@ online version:
 schema: 2.0.0
 ---
 
-# Clear-WebView2Cache
+# Convert-UnixTime
 
 ## SYNOPSIS
-Deletes the WebView2 cache folder.
+Convert UnixTime to DateTime and vice versa.
 
 ## SYNTAX
 
+### fromDateTime (Default)
 ```powershell
-Clear-WebView2Cache [-ProgressAction <ActionPreference>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Convert-UnixTime [[-date] <DateTime>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
+```
+
+### fromEpoch
+```powershell
+Convert-UnixTime [[-epoch] <Int64>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Removes PSAuthClient WebView2 user data folder (UDF) which is used to store browser data such as cookies, permissions and cached resources.
+Convert UnixTime to DateTime and vice versa.
 
 ## EXAMPLES
 
 ### EXAMPLE 1
 ```powershell
-Clear-WebView2Cache
->Deletes the WebView2 cache folder.
+Get-UnixTime
+1706961267
+```
+
+### EXAMPLE 2
+```powershell
+Get-UnixTime -epoch 1728896669
+Monday, 14 October 2024 11:04:29
 ```
 
 ## PARAMETERS
 
-### -WhatIf
-Shows what would happen if the cmdlet runs.
-The cmdlet is not run.
+### -date
+The date to convert to Unix time.
+If not specified, the current date and time is used.
 
 ```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases: wi
+Type: DateTime
+Parameter Sets: fromDateTime
+Aliases:
 
 Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
+Position: 1
+Default value: (Get-Date)
+Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
-### -Confirm
-Prompts you for confirmation before running the cmdlet.
+### -epoch
+Unix epoch to convert to DateTime.
 
 ```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases: cf
+Type: Int64
+Parameter Sets: fromEpoch
+Aliases:
 
 Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
+Position: 1
+Default value: 0
+Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
@@ -82,6 +94,8 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## OUTPUTS
 
+### System.Int64
+### System.DateTime
 ## NOTES
 
 ## RELATED LINKS

@@ -15,7 +15,8 @@ Interact with a OAuth2 Authorization endpoint.
 ```powershell
 Invoke-OAuth2AuthorizationEndpoint [-uri] <String> -client_id <String> [-redirect_uri <String>]
  [-response_type <String>] [-scope <String>] [-usePkce <Boolean>] [-response_mode <String>]
- [-customParameters <Hashtable>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
+ [-customParameters <Hashtable>] [-userAgent <String>] [-ProgressAction <ActionPreference>]
+ [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -167,6 +168,21 @@ Provided with state, nonce or PKCE keys these values are used in the request (ot
 
 ```yaml
 Type: Hashtable
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -userAgent
+OPTIONAL Custom User-Agent string to be used in the WebView2 browser.
+
+```yaml
+Type: String
 Parameter Sets: (All)
 Aliases:
 

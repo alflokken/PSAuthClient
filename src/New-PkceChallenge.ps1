@@ -14,7 +14,7 @@ function New-PkceChallenge {
     $response = [ordered]@{}
     # code_verifier (should be a random string using the characters "[A-Z,a-z,0-9],-._~" between 43 and 128 characters long)
     [string]$response.code_verifier = Get-RandomString
-    # dereive code_challenge from code_verifier (SHA256 hash) and encode using base64urlencoding (fallback to plain)
+    # derive code_challenge from code_verifier (SHA256 hash) and encode using base64urlencoding (fallback to plain)
     try { 
         $hashAlgorithm = [System.Security.Cryptography.HashAlgorithm]::Create('sha256') 
         $hashInBytes = $hashAlgorithm.ComputeHash([System.Text.Encoding]::ASCII.GetBytes($response.code_verifier))
