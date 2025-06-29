@@ -2,60 +2,50 @@ param (
     $moduleName = "PSAuthClient",
     [Parameter(Mandatory=$true)]$moduleVersion,
     $prerelease = $false,
-    $basePath = "$PSScriptRoot\..\" 
+    $basePath = "$PSScriptRoot\.."
 )
-
 $releasePath ="$basePath\release\$moduleName\$moduleVersion"
 
-# dependencies
-foreach ( $package in ([XML](Get-Content "$basePath\packages.config")).packages.package ) { 
-    write-debug $package.id
-    New-Item -ItemType Directory -Path "$releasePath\$($package.id).$($package.version)" -Force | Out-Null
-    foreach ( $framework in (Get-ChildItem "$basePath\packages\$($package.id).$($package.version)\lib" -Directory) ) { 
-        write-debug $framework
-        copy-item -Recurse -Path $framework -Destination "$releasePath\$($package.id).$($package.version)" -Force
-    }
-    foreach ( $runtime in (Get-ChildItem "$basePath\packages\$($package.id).$($package.version)\runtimes" -Directory) ) { 
-        Write-Debug $runtime
-        copy-item -Recurse -Path  "$runtime\native\" -Destination "$releasePath\$($package.id).$($package.version)\runtimes\$($runtime.name)\"
-    }
-}
+# source files to be included in the module
+$filesToRollup = (Get-ChildItem "$basePath\src" -File -Recurse -Filter "*.ps1" | Where-Object { $_.FullName -notmatch "\\((module(s)?)|script(s)?)\\" }).fullname | sort -Unique
 
-if ( !(test-path $releasePath) ) { New-Item -ItemType Directory -Path $releasePath -Force | Out-Null }
+# placeholders
+$cmdletsToExport = @(); $aliasesToExport = @(); $contentArray = @()
 
-$filesToRollup = @()
-"$basePath\src\" | %{ $filesToRollup += Get-ChildItem $_ -filter *.ps1 -Recurse | where { $_.FullName -notmatch "\\((module(s)?)|script(s)?)\\" } }
-$filesToRollup = ($filesToRollup | sort name).FullName | sort -Unique
-
-$cmdLetBlob = @()
-$aliasBlob = @()
-$contentArray = @()
+# process source file content
 foreach ( $file in $filesToRollup ) { 
     $content = get-content $file -Encoding utf8
     $contentArray += $content
-    # export public functions
+    # public functions are exported
     if ( $file -notmatch "\\src\\internal\\" ) { 
-        # function
-        $cmdLetBlob += $content | where { $_ -match "^function\s{1}" }
-        # export aliases
-        $aliasBlob += $content | where { $_ -match "\[Alias\(" -and $_ -notmatch "^#|#\[Alias\(" } 
+        # functions
+        $cmdletsToExport += $content | where { $_ -match "^function\s{1}" } 
+        # extract aliases
+        $aliasesToExport += $content | where { $_ -match "\[Alias\(" -and $_ -notmatch "^#|#\[Alias\(" } 
     }
 }
 
-# export module
-Set-Content -Path "$releasePath\$moduleName.psm1" -Value $contentArray -Debug:$true -Confirm:$false
+# add contents to the module file
+Set-Content -Path "$releasePath\$moduleName.psm1" -Value $contentArray -Debug:$true -Confirm:$false -Force
 
-# files to include in manifest
-$fileList = Get-ChildItem $releasePath -Directory | % { Get-ChildItem -Recurse $_.fullname -File } 
-
-# scripts to process
+# scripts to include
 $scriptList = Get-ChildItem "$basePath\src\scripts" -File -Recurse -Filter "*.ps1"
+# copy the scripts to the release path
 $scriptList | Copy-Item -Destination $releasePath -Force
+$scriptList = $scriptlist.FullName -replace ".*\\scripts\\",".\"
+
+# clean up syntax
+$cmdletsToExport = $cmdletsToExport -replace "function\s+" -replace "(\s+)?{(\s+)?" | sort
+$aliasesToExport = ($aliasesToExport -replace "(\s+)?\[Alias\([('|`")]","" -replace "('|`")" -replace "\)]") -split "," | sort -Unique
+
+# files to include
+$fileList = (Get-ChildItem $releasePath -Recurse -File).FullName -replace ".*$moduleName\\$moduleVersion\\"
+$fileList += "$moduleName.psd1"
+$fileList = $fileList | sort
 
 # build manifest
 $moduleManifest = @{ 
     Author = "Alf Løkken"
-    CompanyName = "Intility AS"
     RootModule = "$moduleName.psm1"
     Path = "$releasePath\$moduleName.psd1"
     ModuleVersion = $moduleVersion
@@ -68,12 +58,12 @@ $moduleManifest = @{
     Tags = @("OAuth2.0","OAuth","OIDC","OpenID","OpenIDConnect","Authentication","Authorization","AuthN","AuthZ","PKCE","WebView2","JWT")
     LicenseUri = "https://raw.githubusercontent.com/alflokken/PSAuthClient/main/LICENSE"
     ProjectUri = "https://github.com/alflokken/PSAuthClient"
-    CmdletsToExport = ( ($cmdLetBlob -replace "function\s+") -replace "(\s+)?{(\s+)?" | sort ) 
-    FunctionsToExport = ( ($cmdLetBlob -replace "function\s+") -replace "(\s+)?{(\s+)?" | sort ) 
-    AliasesToExport = (( ( ($aliasBlob -replace "(\s+)?\[Alias\([('|`")]") -replace "('|`")" ) -replace "\)]" ) -split ",")
-    FileList = $fileList.FullName -replace ".*$moduleName\\$moduleVersion\\" | sort
-    ScriptsToProcess = $scriptlist.FullName -replace ".*\\scripts\\",".\"
+    CmdletsToExport = $cmdletsToExport
+    FunctionsToExport = $cmdletsToExport
+    AliasesToExport = $aliasesToExport
+    FileList = $fileList
+    ScriptsToProcess = $scriptlist
 }
 if ( $prerelease ) { $moduleManifest.Prerelease = "preview" }
 New-ModuleManifest @moduleManifest
-return "$modulename-$($moduleversion): $([int]((Get-Item "$releasePath\$moduleName.psm1").Length/1024))kb rolled up to release ($($contentArray.count) lines in $($filesToRollup.count) files with $($cmdLetBlob.Count) functions)"
+return "$modulename-$($moduleversion): $([int]((Get-Item "$releasePath\$moduleName.psm1").Length/1024))kb rolled up to release ($($contentArray.count) lines in $($filesToRollup.count) files with $($cmdletsToExport.Count) functions)"

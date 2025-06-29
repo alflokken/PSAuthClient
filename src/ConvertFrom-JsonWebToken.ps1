@@ -28,17 +28,28 @@ function ConvertFrom-JsonWebToken {
         [ValidatePattern("^e[yJ|w0]([a-zA-Z0-9_-]+[.]){2}", Options = "None")]
         [string]$jwtInput
     )
-    $response = New-Object -TypeName PSObject
-    [pscustomobject]$jwt = $jwtInput -split "[.]"
-    for ( $i = 0; $i -lt $jwt.count; $i++ ) {
-        try { $data = ConvertFrom-Base64UrlEncoding $jwt[$i] | ConvertFrom-Json }
-        catch { $data = $jwt[$i] }
-        switch ( $i ) {
-            0 { $response | Add-Member -NotePropertyName header -TypeName NoteProperty $data }
-            1 { $response | Add-Member -NotePropertyName payload -TypeName NoteProperty $data  }
-            2 { $response | Add-Member -NotePropertyName signature -TypeName NoteProperty $data  }
-        }
+
+    $segments = $jwtInput -split "[.]"
+    if ( $segments.Count -ne 3 ) { throw "Invalid JWT format: Expected 3 segments (header.payload.signature)."}
+
+    $decodedJwt = [pscustomobject]@{
+        header    = $null
+        payload   = $null
+        signature = $segments[2] 
     }
-    # ...We prefer ordered output
-    return $response | Select-Object header, signature -ExpandProperty payload | Select-Object header, * -ErrorAction SilentlyContinue
+
+    try { $decodedJwt.header = ConvertFrom-Base64UrlEncoding $segments[0] | ConvertFrom-Json }
+    catch {
+        write-warning "Failed to decode JWT header. The header will be returned as a Base64Url encoded string."
+        $decodedJwt.header = $segments[0]
+    }
+
+    try { $decodedJwt.payload = ConvertFrom-Base64UrlEncoding $segments[1] | ConvertFrom-Json }
+    catch {
+        write-warning "Failed to decode JWT payload. The payload will be returned as a Base64Url encoded string."
+        $decodedJwt.payload = $segments[1]
+    }
+
+    # ordered output with the payload expanded
+    return $decodedJwt | Select-Object header, signature -ExpandProperty payload | Select-Object header, * -ErrorAction SilentlyContinue
 }

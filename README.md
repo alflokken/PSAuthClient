@@ -2,41 +2,156 @@
 PSAuthClient is a flexible PowerShell OAuth2.0/OpenID Connect (OIDC) Client.
 * Support for a [wide range of grants](#examples-of-openid-connect-oidc-and-oauth20-grants).
 * Uses [WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/) to support modern web experiences where interaction is required.
-* Includes [useful tools](#Tools) for decoding tokens and validating jwt signatures.
+* Includes [useful tools](#Tools) for decoding tokens and validating JWT signatures.
 <br>
 
 ![Auth client in use](docs/images/spotify_auth.gif)
 
-# Install
-The module is available from PSGallery, alternatively [download](https://github.com/alflokken/PSAuthClient/releases/download/v1.0.1/PSAuthClient.zip) and place the module in '$home\Documents\WindowsPowerShell\Modules or
-'$env:ProgramFiles\PowerShell\Modules' manually.
-```powershell
-Install-Module PSAuthClient -Scope:CurrentUser
-```
+# Table of Contents
+- [Install](#install)
+- [Quick Start](#quick-start)
+- [Documentation](#documentation)
+- [Utilities included](#example-usage-of-additional-tools)
+- [OIDC and OAuth2.0 Grant Examples](#examples-of-different-openid-connect-oidc-and-oauth20-grants)
+- [Issues and Contributions](#issues-and-contributions)
 
-# Usage
+
+# Install
+Either install the module from PSGallery `Install-Module PSAuthClient -Scope:CurrentUser` or [download](https://github.com/alflokken/PSAuthClient/releases) and unzip to ‘$home\Documents\WindowsPowerShell\Modules’.
+
+## Quick Start
+Check out my blog post on getting started with PSAuthClient.
+* Using [OAuth2](https://alflokken.github.io/posts/powershell-oauth2-authentication/) with Spotify as the OAuth2.0 provider.
+* Using [OpenID Connect (OIDC)](https://alflokken.github.io/posts/powershell-oidc-authentication/) with Microsoft Graph as the OIDC provider.
+
+# Documentation
 See links for function documentation, usage and examples.
 | Function | Description |
 | -------- | ----------- |
-| [Invoke-OAuth2AuthorizationEndpoint](/docs/Invoke-OAuth2AuthorizationEndpoint.md) | Uses WebView2 (embedded browser based on Microsoft Edge) to request authorization, this ensures support for modern web pages and capabilities like SSO, Windows Hello, FIDO key login, etc. | 
-| [Invoke-OAuth2DeviceAuthorizationEndpoint](/docs/Invoke-OAuth2DeviceAuthorizationEndpoint.md) | Get device verification code and end-user code from the device authorization endpoint, which then can be used to request tokens from the token endpoint. |
-| [Invoke-OAuth2TokenEndpoint](docs/Invoke-OAuth2TokenEndpoint.md) | Build and send token exchange requests to the OAuth2.0 Token Endpoint. |
-| [Get-OidcConfigurationMetadata](docs/Get-OidcDiscoveryMetadata.md) | Retreive OpenID Connect Discovery endpoint metadata. |
-| [ConvertFrom-JsonWebToken](docs/ConvertFrom-JsonWebToken.md) | Convert (decode) a JSON Web Token (JWT) to a PowerShell object. |
-| [Test-JsonWebTokenSignature](docs/Test-JsonWebTokenSignature.md) | Attempt to validate the signature of a JSON Web Token (JWT) by using the issuer discovery metadata to get the signing certificate. (If no signing certificate or secret was provided.) |
-| [New-PkceChallenge](docs/New-PkceChallenge.md) | Generate code_verifier and code_challenge for PKCE (authorization code flow). |
-| [New-Oauth2JwtAssertion](docs/New-Oauth2JwtAssertion.md) | Create and sign JWT Assertions using either a client_certificate (x509certificate2 or RSA Private key) or client_secret (for HMAC-based signature).|
-| [Clear-WebView2Cache](docs/Clear-WebView2Cache.md) | Removes PSAuthClient WebView2 user data folder (UDF) which is used to store browser data such as cookies, permissions and cached resources.|
-
+| [Invoke-OAuth2AuthorizationEndpoint](/docs/Invoke-OAuth2AuthorizationEndpoint.md) | Launches an embedded WebView2 browser to perform the OAuth2.0/OIDC Authorization Code flow. Supports modern authentication features (SSO, Windows Hello, FIDO2). | 
+| [Invoke-OAuth2DeviceAuthorizationEndpoint](/docs/Invoke-OAuth2DeviceAuthorizationEndpoint.md) | Initiates the Device Code flow by retrieving a user and device verification code from the authorization server that can be used to request tokens from the token endpoint. |
+| [Invoke-OAuth2TokenEndpoint](docs/Invoke-OAuth2TokenEndpoint.md) | Requests security tokens using various grant types: authorization code, device code, refresh token, client credentials, or JWT assertions.|
+| [Get-OidcConfigurationMetadata](docs/Get-OidcDiscoveryMetadata.md) | Retrieves OpenID Connect Discovery metadata (`.well-known/openid-configuration`). |
+| [ConvertFrom-JsonWebToken](docs/ConvertFrom-JsonWebToken.md) | Decodes a JWT and returns a PowerShell object. | 
+| [Test-JsonWebTokenSignature](docs/Test-JsonWebTokenSignature.md) | Attempts to verify the JWT signature using the issuer’s published signing keys (via discovery metadata) or provided certificate/secret. | 
+| [New-PkceChallenge](docs/New-PkceChallenge.md) | Generates a PKCE `code_verifier` and `code_challenge` pair for Authorization Code flows. | 
+| [New-Oauth2JwtAssertion](docs/New-Oauth2JwtAssertion.md) | Builds and signs a JWT assertion using either a client certificate or HMAC secret, suitable for `private_key_jwt` or `client_secret_jwt` authentication methods.|
+| [Clear-WebView2Cache](docs/Clear-WebView2Cache.md) | Deletes the WebView2 User Data Folder to clear cached sessions and cookies. |
 
 <br>
 
-# Examples of OpenID Connect (OIDC) and OAuth2.0 Grants
+## Example usage of additional tools
+
+<details>
+<summary><b>OIDC Discovery</b></summary>
+
+Retrieve OpenID Connect Discovery metadata.
+```powershell
+Get-OidcDiscoveryMetadata "https://login.microsoftonline.com/common"
+
+token_endpoint                        : https://login.microsoftonline.com/common/oauth2/token
+token_endpoint_auth_methods_supported : {client_secret_post, private_key_jwt, client_secret_basic}
+jwks_uri                              : https://login.microsoftonline.com/common/discovery/keys
+response_modes_supported              : {query, fragment, form_post}
+subject_types_supported               : {pairwise}
+id_token_signing_alg_values_supported : {RS256}
+response_types_supported              : {code, id_token, code id_token, token id_token}
+scopes_supported                      : {openid}
+issuer                                : https://sts.windows.net/{tenantid}/
+microsoft_multi_refresh_token         : True
+authorization_endpoint                : https://login.microsoftonline.com/common/oauth2/authorize
+device_authorization_endpoint         : https://login.microsoftonline.com/common/oauth2/devicecode
+http_logout_supported                 : True
+frontchannel_logout_supported         : True
+end_session_endpoint                  : https://login.microsoftonline.com/common/oauth2/logout
+claims_supported                      : {sub, iss, cloud_instance_name, cloud_instance_host_name}
+check_session_iframe                  : https://login.microsoftonline.com/common/oauth2/checksession
+userinfo_endpoint                     : https://login.microsoftonline.com/common/openid/userinfo
+kerberos_endpoint                     : https://login.microsoftonline.com/common/kerberos
+tenant_region_scope                   : 
+cloud_instance_name                   : microsoftonline.com
+cloud_graph_host_name                 : graph.windows.net
+msgraph_host                          : graph.microsoft.com
+rbac_url                              : https://pas.windows.net
+
+
+```
+
+</details>
+
+<details>
+<summary><b>Decode JWT</b></summary>
+
+Convert (decode) a JSON Web Token (JWT) to a PowerShell object.
+```powershell
+PS> ConvertFrom-JsonWebToken "ew0KICAidHlwIjogIkpXVCIsDQogICJhbGciOiAiUlMyNTYiDQp9.ew0KICAi..."
+
+header    : @{typ=JWT; alg=RS256}
+exp       : 1706784929
+echo      : Hello World!
+nbf       : 1706784629
+sub       : PSAuthClient
+iss       : https://example.org
+jti       : 27913c80-40d1-46a3-89d5-d3fb9f0d1e4e
+iat       : 1706784629
+aud       : PSAuthClient
+signature : OHIxRGxuaXVLTjh4eXhRZ0VWYmZ3SHNlQ29iOUFBUVRMK1dqWUpWMEVXMD0
+
+
+
+```
+
+</details>
+
+<details>
+<summary><b>Validate JWT Signature</b></summary>
+
+Attempt to validate the signature of a JSON Web Token (JWT) by using the issuer discovery metadata to get the signing certificate. (If no signing certificate or secret was provided.)
+
+```powershell
+PS> Test-JsonWebTokenSignature -jwtInput $jwt
+True
+```
+
+</details>
+
+<details>
+<summary><b>Build JWT Assertions</b></summary>
+
+Create and sign JWT Assertions using either a client_certificate (x509certificate2 or RSA Private key) or client_secret (for HMAC-based signature).
+
+```powershell
+PS> New-Oauth2JwtAssertion -issuer "test" -subject "test1" -audience "test2" -jwtId "123" -customClaims @{ claim1 = "test" } -client_secret "secret"
+
+client_assertion_jwt           ew0KICAiYWxnIjogIlJTMjU2IiwNCiAgInR5cCI6ICJKV1QiDQp9.ew0KICAianRp...
+client_assertion_type          urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+header                         @{alg=RS256; typ=JWT}
+payload                        @{jti=123; claim1=test; aud=test2; exp=1706793151; nbf=170679285...}
+```
+
+</details>
+
+<details>
+<summary><b>Generate a PKCE Challenge</b></summary>
+
+Generate code_verifier and code_challenge for PKCE (authorization code flow).
+
+```powershell
+PS> New-PkceChallenge
+
+code_verifier                  Vpq2YXOsD~1DRM-jBPR6bt8R-3dWQAHNLVLUIDxh7SkWpOT3A0grpenqKne5rAHcVKsTi-ya8-lGBxJ0NS7zavdcFbfdN0yFQ5kYOFbWBh3
+code_challenge                 TW-3r-6mxRWjhkkxmYOabLlwIQ0JkQ0ndxzOSLJvCoU
+code_challenge_method          S256
+```
+
+</details>
+
+## Examples of different OpenID Connect (OIDC) and OAuth2.0 Grants
 
 OpenID Connect is an extension of OAuth2 that adds an identity layer to the authorization framework. This allows a client to verify the identity of the user and obtain basic profile information. OIDC grants contains 'openid' scope and the identity provider will return a 'id_token' with user information (claims). 
 
 <details>
-<summary>Parameters that are used (and modified) troughout the examples below.</summary>
+<summary>Parameters that are used (and modified) throughout the examples below.</summary>
 
 ```powershell
 $authorization_endpoint = "https://login.microsoftonline.com/example.org/oauth2/v2.0/authorize"
@@ -348,111 +463,8 @@ expiry_datetime : 31.01.2024 15:07:19
 
 <details>
 <summary><b>Resource Owner Password Flow (ROPC)</b></summary>
-no thanks, tom hanks.
+I did not bother to implement this flow, as its insecure and not recommended for use. Its fairly trivial to implement if you need it. See https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth-ropc for more information.
 </details>
 
-# Tools
-
-<details>
-<summary><b>OIDC Discovery</b></summary>
-
-Retreive OpenID Connect Discovery metadata.
-```powershell
-Get-OidcDiscoveryMetadata "https://login.microsoftonline.com/common"
-
-token_endpoint                        : https://login.microsoftonline.com/common/oauth2/token
-token_endpoint_auth_methods_supported : {client_secret_post, private_key_jwt, client_secret_basic}
-jwks_uri                              : https://login.microsoftonline.com/common/discovery/keys
-response_modes_supported              : {query, fragment, form_post}
-subject_types_supported               : {pairwise}
-id_token_signing_alg_values_supported : {RS256}
-response_types_supported              : {code, id_token, code id_token, token id_tokenÔÇª}
-scopes_supported                      : {openid}
-issuer                                : https://sts.windows.net/{tenantid}/
-microsoft_multi_refresh_token         : True
-authorization_endpoint                : https://login.microsoftonline.com/common/oauth2/authorize
-device_authorization_endpoint         : https://login.microsoftonline.com/common/oauth2/devicecode
-http_logout_supported                 : True
-frontchannel_logout_supported         : True
-end_session_endpoint                  : https://login.microsoftonline.com/common/oauth2/logout
-claims_supported                      : {sub, iss, cloud_instance_name, cloud_instance_host_name}
-check_session_iframe                  : https://login.microsoftonline.com/common/oauth2/checksession
-userinfo_endpoint                     : https://login.microsoftonline.com/common/openid/userinfo
-kerberos_endpoint                     : https://login.microsoftonline.com/common/kerberos
-tenant_region_scope                   : 
-cloud_instance_name                   : microsoftonline.com
-cloud_graph_host_name                 : graph.windows.net
-msgraph_host                          : graph.microsoft.com
-rbac_url                              : https://pas.windows.net
-
-
-```
-
-</details>
-
-<details>
-<summary><b>Decode JWT</b></summary>
-
-Convert (decode) a JSON Web Token (JWT) to a PowerShell object.
-```powershell
-PS> ConvertFrom-JsonWebToken "ew0KICAidHlwIjogIkpXVCIsDQogICJhbGciOiAiUlMyNTYiDQp9.ew0KICAi..."
-
-header    : @{typ=JWT; alg=RS256}
-exp       : 1706784929
-echo      : Hello World!
-nbf       : 1706784629
-sub       : PSAuthClient
-iss       : https://example.org
-jti       : 27913c80-40d1-46a3-89d5-d3fb9f0d1e4e
-iat       : 1706784629
-aud       : PSAuthClient
-signature : OHIxRGxuaXVLTjh4eXhRZ0VWYmZ3SHNlQ29iOUFBUVRMK1dqWUpWMEVXMD0
-
-
-
-```
-
-</details>
-
-<details>
-<summary><b>Validate JWT Signature</b></summary>
-
-Attempt to validate the signature of a JSON Web Token (JWT) by using the issuer discovery metadata to get the signing certificate. (If no signing certificate or secret was provided.)
-
-```powershell
-PS> Test-JsonWebTokenSignature -jwtInput $jwt
-True
-```
-
-</details>
-
-<details>
-<summary><b>Build JWT Assertions</b></summary>
-
-Create and sign JWT Assertions using either a client_certificate (x509certificate2 or RSA Private key) or client_secret (for HMAC-based signature).
-
-```powershell
-PS> New-Oauth2JwtAssertion -issuer "test" -subject "test1" -audience "test2" -jwtId "123" -customClaims @{ claim1 = "test" } -client_secret "secret"
-
-client_assertion_jwt           ew0KICAiYWxnIjogIlJTMjU2IiwNCiAgInR5cCI6ICJKV1QiDQp9.ew0KICAianRp...
-client_assertion_type          urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-header                         @{alg=RS256; typ=JWT}
-payload                        @{jti=123; claim1=test; aud=test2; exp=1706793151; nbf=170679285...}
-```
-
-</details>
-
-<details>
-<summary><b>Generate a PKCE Challenge</b></summary>
-
-Generate code_verifier and code_challenge for PKCE (authorization code flow).
-
-```powershell
-PS> New-PkceChallenge
-
-code_verifier                  Vpq2YXOsD~1DRM-jBPR6bt8R-3dWQAHNLVLUIDxh7SkWpOT3A0grpenqKne5rAHcVKsTi-ya8-lGBxJ0NS7zavdcFbfdN0yFQ5kYOFbWBh3
-code_challenge                 TW-3r-6mxRWjhkkxmYOabLlwIQ0JkQ0ndxzOSLJvCoU
-code_challenge_method          S256
-```
-
-</details>
+## Issues and Contributions
+If you encounter a bug or have a feature request, please [create an issue](https://github.com/alflokken/PSAuthClient/issues). I'm not actively seeking contributions. However, if you have an improvement in mind, please open an issue first to discuss it before submitting a pull request.
