@@ -145,13 +145,13 @@ function Invoke-OAuth2AuthorizationEndpoint {
         Start-Sleep -Milliseconds 500
     }
 
-    # authorization request (interactive)
-    $webViewParams = @{
-        uri = $uri
-        title = "Authorization code flow"
-        UrlCloseConditionRegex = "$($redirect_uri)?.*(?:code=([^&]+)|error=([^&]+))|^$redirect_uri"
-    }
+    # webview2 authorization request (interactive)
+    $webViewParams = @{}
+    $webViewParams.uri = $uri
+    $webViewParams.title = "Authorization code flow"
     if ( $userAgent ) { $webViewParams.userAgent = $userAgent }
+    if ( $redirect_uri ) { $webViewParams.UrlCloseConditionRegex = "($($redirect_uri))?.*(?:code=([^&]+)|error=([^&]+))|^($($redirect_uri))" }
+    else { $webViewParams.UrlCloseConditionRegex = "(?:code=([^&]+)|error=([^&]+))" }
     $webSource = Invoke-WebView2 @webViewParams
     
     # if form post - retreive job (post) after interaction has been complete
