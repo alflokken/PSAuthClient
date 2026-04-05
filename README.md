@@ -30,12 +30,12 @@ See links for function documentation, usage and examples.
 | -------- | ----------- |
 | [Invoke-OAuth2AuthorizationEndpoint](/docs/Invoke-OAuth2AuthorizationEndpoint.md) | Launches an embedded WebView2 browser to perform the OAuth2.0/OIDC Authorization Code flow. Supports modern authentication features (SSO, Windows Hello, FIDO2). | 
 | [Invoke-OAuth2DeviceAuthorizationEndpoint](/docs/Invoke-OAuth2DeviceAuthorizationEndpoint.md) | Initiates the Device Code flow by retrieving a user and device verification code from the authorization server that can be used to request tokens from the token endpoint. |
-| [Invoke-OAuth2TokenEndpoint](docs/Invoke-OAuth2TokenEndpoint.md) | Requests security tokens using various grant types: authorization code, device code, refresh token, client credentials, or JWT assertions.|
+| [Invoke-OAuth2TokenEndpoint](docs/Invoke-OAuth2TokenEndpoint.md) | Requests security tokens using various grant types: authorization code, device code, refresh token, client credentials, JWT assertions, or JWT Bearer (RFC 7523).|
 | [Get-OidcConfigurationMetadata](docs/Get-OidcDiscoveryMetadata.md) | Retrieves OpenID Connect Discovery metadata (`.well-known/openid-configuration`). |
 | [ConvertFrom-JsonWebToken](docs/ConvertFrom-JsonWebToken.md) | Decodes a JWT and returns a PowerShell object. | 
 | [Test-JsonWebTokenSignature](docs/Test-JsonWebTokenSignature.md) | Attempts to verify the JWT signature using the issuer’s published signing keys (via discovery metadata) or provided certificate/secret. | 
 | [New-PkceChallenge](docs/New-PkceChallenge.md) | Generates a PKCE `code_verifier` and `code_challenge` pair for Authorization Code flows. | 
-| [New-Oauth2JwtAssertion](docs/New-Oauth2JwtAssertion.md) | Builds and signs a JWT assertion using either a client certificate or HMAC secret, suitable for `private_key_jwt` or `client_secret_jwt` authentication methods.|
+| [New-Oauth2JwtAssertion](docs/New-Oauth2JwtAssertion.md) | Builds and signs a JWT assertion using either a client certificate (cert store path, x509certificate2, RSA key object, or PEM string) or HMAC secret, suitable for `private_key_jwt`, `client_secret_jwt`, or JWT Bearer grant flows.|
 | [Clear-WebView2Cache](docs/Clear-WebView2Cache.md) | Deletes the WebView2 User Data Folder to clear cached sessions and cookies. |
 
 <br>
@@ -459,6 +459,30 @@ expiry_datetime : 31.01.2024 15:07:19
 
 
 ```
+</details>
+
+<details>
+<summary><b>JWT Bearer Grant / Service Account (RFC 7523)</b></summary>
+
+Example using a Google service account key file.
+```powershell
+$keyData = Get-Content 'C:\keys\my-sa-key.json' | ConvertFrom-Json
+$jwt = New-Oauth2JwtAssertion `
+        -issuer             $keyData.client_email `
+        -subject            $keyData.client_email `
+        -audience           'https://oauth2.googleapis.com/token' `
+        -key_id             $keyData.private_key_id `
+        -client_certificate $keyData.private_key `
+        -customClaims       @{ scope = 'https://www.googleapis.com/auth/spreadsheets' }
+
+$token = Invoke-OAuth2TokenEndpoint -uri 'https://oauth2.googleapis.com/token' -jwtAssertion $jwt.client_assertion_jwt
+
+token_type      : Bearer
+expires_in      : 3599
+access_token    : ya29.c.b0ARPM...
+expiry_datetime : 05.04.2026 19:00:38
+```
+`New-Oauth2JwtAssertion` accepts the PEM `private_key` string directly from the JSON key file. The signed JWT is exchanged for an access token via the RFC 7523 JWT Bearer grant.
 </details>
 
 <details>
