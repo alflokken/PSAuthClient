@@ -45,6 +45,11 @@ function Invoke-OAuth2TokenEndpoint {
     .PARAMETER customHeaders
     Hashtable with custom headers to be added to the request uri (e.g. User-Agent, Origin, Referer, etc.).
 
+    .PARAMETER assertion
+    A pre-built signed JWT for the RFC 7523 JWT Bearer grant (grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer).
+    Build the JWT using New-Oauth2JwtAssertion, then pass the .client_assertion_jwt property here.
+    Used for flows like Google service account authentication where the JWT itself is the grant.
+
     .EXAMPLE
     PS> $code = Invoke-OAuth2AuthorizationEndpoint -uri $authorization_endpoint @splat
     PS> Invoke-OAuth2TokenEndpoint -uri $token_endpoint @code
@@ -79,6 +84,25 @@ function Invoke-OAuth2TokenEndpoint {
 
     Client authentication using private_key_jwt
 
+    .EXAMPLE
+    PS> $keyData = Get-Content 'C:\keys\my-sa-key.json' | ConvertFrom-Json
+    PS> $jwt = New-Oauth2JwtAssertion `
+            -issuer             $keyData.client_email `
+            -subject            $keyData.client_email `
+            -audience           'https://oauth2.googleapis.com/token' `
+            -key_id             $keyData.private_key_id `
+            -client_certificate $keyData.private_key `
+            -customClaims       @{ scope = 'https://www.googleapis.com/auth/spreadsheets' }
+    PS> Invoke-OAuth2TokenEndpoint -uri 'https://oauth2.googleapis.com/token' -jwtAssertion $jwt.client_assertion_jwt
+    token_type      : Bearer
+    expires_in      : 3599
+    access_token    : ya29.c.b0ARPM...
+    expiry_datetime : 05.04.2026 19:00:38
+
+    Google service account authentication using RFC 7523 JWT Bearer grant.
+    New-Oauth2JwtAssertion builds and signs the JWT (passing the PEM private_key string directly);
+    the signed JWT is exchanged for an access token via the jwt_bearer parameter set.
+
     #>
     [Alias('Invoke-TokenEndpoint','token')]
     [cmdletbinding(DefaultParameterSetName='code')]
@@ -88,6 +112,7 @@ function Invoke-OAuth2TokenEndpoint {
         [parameter( Position = 0, Mandatory = $true, ParameterSetName='code')]
         [parameter( Position = 0, Mandatory = $true, ParameterSetName='device_code')]
         [parameter( Position = 0, Mandatory = $true, ParameterSetName='refresh')]
+        [parameter( Position = 0, Mandatory = $true, ParameterSetName='jwt_bearer')]
         [string]$uri,
 
         [parameter( Mandatory = $false, ParameterSetName='client_certificate')]
@@ -150,7 +175,10 @@ function Invoke-OAuth2TokenEndpoint {
         [parameter( Mandatory = $false, ParameterSetName='code')]
         [parameter( Mandatory = $false, ParameterSetName='device_code')]
         [parameter( Mandatory = $false, ParameterSetName='refresh')]
-        [hashtable]$customHeaders
+        [hashtable]$customHeaders,
+
+        [parameter( Mandatory = $true, ParameterSetName='jwt_bearer')]
+        [string]$jwtAssertion
     )
 
     $payload = @{}
@@ -180,6 +208,10 @@ function Invoke-OAuth2TokenEndpoint {
     elseif ( $device_code ) { 
         $requestBody.grant_type = "urn:ietf:params:oauth:grant-type:device_code"
         $requestBody.device_code = $device_code
+    }
+    elseif ( $jwtAssertion ) {
+        $requestBody.grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        $requestBody.assertion = $jwtAssertion
     }
     elseif ( $refresh_token ) { 
         $requestBody.grant_type = "refresh_token"

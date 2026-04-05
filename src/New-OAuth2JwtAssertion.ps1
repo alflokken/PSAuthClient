@@ -22,7 +22,8 @@ function New-Oauth2JwtAssertion {
     Hashtable with custom claims to be added to the JWT payload (assertion).
 
     .PARAMETER client_certificate
-    Location Cert:\CurrentUser\My\THUMBPRINT, x509certificate2 or RSA Private key.
+    Location Cert:\CurrentUser\My\THUMBPRINT, x509certificate2, RSA private key object, or a PEM string
+    (must begin with '-----BEGIN PRIVATE KEY-----' and end with '-----END PRIVATE KEY-----').
 
     .PARAMETER key_id
     kid, key identifier for assertion header
@@ -74,8 +75,23 @@ function New-Oauth2JwtAssertion {
     # certificate properties
     if ( $client_certificate ) {
         if ( $client_certificate.GetType().Name -notmatch "^X509Certificate|^RSA" ) {
-            try { $client_certificate = Get-Item $client_certificate -ErrorAction Stop }
-            catch { throw $_ }
+            if ( $client_certificate -is [string] -and
+                 $client_certificate -match '^\s*-----BEGIN PRIVATE KEY-----' -and
+                 $client_certificate -match '-----END PRIVATE KEY-----\s*$' ) {
+                # PEM PKCS#8 private key string — import as RSA for signing
+                $pem      = $client_certificate `
+                                -replace '-----BEGIN PRIVATE KEY-----','' `
+                                -replace '-----END PRIVATE KEY-----','' `
+                                -replace '\s',''
+                $keyBytes  = [Convert]::FromBase64String($pem)
+                $rsa       = [System.Security.Cryptography.RSA]::Create()
+                $bytesRead = 0
+                $rsa.ImportPkcs8PrivateKey($keyBytes, [ref]$bytesRead)
+                $client_certificate = $rsa
+            } else {
+                try { $client_certificate = Get-Item $client_certificate -ErrorAction Stop }
+                catch { throw $_ }
+            }
         }
         if ( $client_certificate.GetType().Name -match "^X509Certificate" ) { $jwtHeader.x5t = ConvertTo-Base64urlencoding $client_certificate.GetCertHash() }
         if ( $key_id ) { $jwtHeader.kid = $key_id }
