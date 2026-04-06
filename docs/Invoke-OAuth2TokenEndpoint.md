@@ -19,6 +19,12 @@ Invoke-OAuth2TokenEndpoint [-uri] <String> [-client_id <String>] [-redirect_uri 
  [-customHeaders <Hashtable>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
+### jwt_bearer
+```powershell
+Invoke-OAuth2TokenEndpoint [-uri] <String> -jwtAssertion <String> [-ProgressAction <ActionPreference>]
+ [<CommonParameters>]
+```
+
 ### refresh
 ```powershell
 Invoke-OAuth2TokenEndpoint [-uri] <String> [-client_id <String>] [-redirect_uri <String>] [-scope <String>]
@@ -114,7 +120,7 @@ The identifier of the client at the authorisation server.
 
 ```yaml
 Type: String
-Parameter Sets: (All)
+Parameter Sets: code, refresh, device_code, client_secret, client_certificate
 Aliases:
 
 Required: False
@@ -300,13 +306,30 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+### -jwtAssertion
+A pre-built signed JWT for the RFC 7523 JWT Bearer grant (grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer).
+Build the JWT using New-Oauth2JwtAssertion, then pass the .client_assertion_jwt property here.
+Used for flows like Google service account authentication where the JWT itself is the grant.
+
+```yaml
+Type: String
+Parameter Sets: jwt_bearer
+Aliases:
+
+Required: True
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
 ### -customHeaders
 Hashtable with custom headers to be added to the request uri (e.g.
 User-Agent, Origin, Referer, etc.).
 
 ```yaml
 Type: Hashtable
-Parameter Sets: (All)
+Parameter Sets: code, refresh, device_code, client_secret, client_certificate
 Aliases:
 
 Required: False

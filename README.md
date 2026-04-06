@@ -467,13 +467,15 @@ expiry_datetime : 31.01.2024 15:07:19
 Example using a Google service account key file.
 ```powershell
 $keyData = Get-Content 'C:\keys\my-sa-key.json' | ConvertFrom-Json
-$jwt = New-Oauth2JwtAssertion `
-        -issuer             $keyData.client_email `
-        -subject            $keyData.client_email `
-        -audience           'https://oauth2.googleapis.com/token' `
-        -key_id             $keyData.private_key_id `
-        -client_certificate $keyData.private_key `
-        -customClaims       @{ scope = 'https://www.googleapis.com/auth/spreadsheets' }
+$splat = @{
+    issuer             = $keyData.client_email
+    subject            = $keyData.client_email
+    audience           = 'https://oauth2.googleapis.com/token'
+    key_id             = $keyData.private_key_id
+    client_certificate = $keyData.private_key
+    customClaims       = @{ scope = 'https://www.googleapis.com/auth/spreadsheets' }
+}
+$jwt = New-Oauth2JwtAssertion @splat
 
 $token = Invoke-OAuth2TokenEndpoint -uri 'https://oauth2.googleapis.com/token' -jwtAssertion $jwt.client_assertion_jwt
 
