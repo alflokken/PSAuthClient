@@ -29,5 +29,5 @@ copy-item -Recurse -Path "$basePath\packages\Microsoft.Web.WebView2.$webView2Ver
 copy-item -Recurse -Path "$basePath\packages\Microsoft.Web.WebView2.$webView2Version\lib_manual\netcoreapp3.0" -Destination "$releasePath\Microsoft.Web.WebView2.$webView2Version" -Force
 # runtime specific files
 foreach ( $runtime in (Get-ChildItem "$basePath\packages\Microsoft.Web.WebView2.$webView2Version\runtimes" -Directory) ) { 
-    copy-item -Recurse -Path "$runtime\native\" -Destination "$releasePath\Microsoft.Web.WebView2.$webView2Version\runtimes\$($runtime.name)\" -Force
+    copy-item -Recurse -Path "$($runtime.FullName)\native\" -Destination "$releasePath\Microsoft.Web.WebView2.$webView2Version\runtimes\$($runtime.name)\" -Force
 }
