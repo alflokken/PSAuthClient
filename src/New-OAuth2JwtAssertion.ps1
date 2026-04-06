@@ -76,9 +76,10 @@ function New-Oauth2JwtAssertion {
     if ( $client_certificate ) {
         if ( $client_certificate.GetType().Name -notmatch "^X509Certificate|^RSA" ) {
             if ( $client_certificate -is [string] -and
-                 $client_certificate -match '^\s*-----BEGIN PRIVATE KEY-----' -and
-                 $client_certificate -match '-----END PRIVATE KEY-----\s*$' ) {
+                $client_certificate -match '^\s*-----BEGIN PRIVATE KEY-----' -and
+                $client_certificate -match '-----END PRIVATE KEY-----\s*$' ) {
                 # PEM PKCS#8 private key string — import as RSA for signing
+                if ($PSVersionTable.PSEdition -ne 'Core') { throw "PEM private key import requires PowerShell 7+. Use a certificate from Cert:\ or an X509Certificate2 object instead." }
                 $pem      = $client_certificate `
                                 -replace '-----BEGIN PRIVATE KEY-----','' `
                                 -replace '-----END PRIVATE KEY-----','' `
