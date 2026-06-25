@@ -58,6 +58,7 @@ Describe "Authorization Code Grant" {
     }
     context "Authorization Code Grant" { 
         BeforeAll { 
+            $splat.redirect_uri = "myapp://auth" # custom redirect_uri for testing (issue #16)
             $code = Invoke-OAuth2AuthorizationEndpoint -uri $config.authorization_endpoint @splat -usePkce:$false
             $token = Invoke-OAuth2TokenEndpoint -uri $config.token_endpoint @code
         }

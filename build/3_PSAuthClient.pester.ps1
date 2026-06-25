@@ -29,3 +29,6 @@ $testParams = @{
 "$basePath\tests\common.Tests.ps1","$basePath\tests\auth.Tests.ps1" | %{ 
     Invoke-Pester -Container (New-PesterContainer -Path $_ -Data $testParams) -Output Detailed
 }
+
+# Pure unit tests (no module/config/network needed) - run standalone without $testParams.
+Invoke-Pester -Container (New-PesterContainer -Path "$basePath\tests\UrlCloseCondition.Tests.ps1") -Output Detailed
