@@ -37,28 +37,28 @@ function Invoke-WebView2 {
 
     #>
     param(
-        [parameter(Position = 0, Mandatory = $true, HelpMessage="The URL to browse.")]
+        [parameter(Position = 0, Mandatory = $true, HelpMessage = "The URL to browse.")]
         [string]$uri,
 
-        [parameter( Mandatory = $false, HelpMessage="Form close condition by regex (URL)")]
+        [parameter( Mandatory = $false, HelpMessage = "Form close condition by regex (URL)")]
         [string]$UrlCloseConditionRegex = "error=[^&]*",
 
-        [parameter( Mandatory = $false, HelpMessage="WebView2 failover to System.Windows.Forms.WebBrowser (IE11)")]
+        [parameter( Mandatory = $false, HelpMessage = "WebView2 failover to System.Windows.Forms.WebBrowser (IE11)")]
         [bool]$failoverToWindowsFormsWebBrowser = $true,
 
-        [parameter( Mandatory = $false, HelpMessage="msSingleSignOnOSForPrimaryAccountIsShared")]
+        [parameter( Mandatory = $false, HelpMessage = "msSingleSignOnOSForPrimaryAccountIsShared")]
         [bool]$allowSingleSignOnUsingOSPrimaryAccount = $true,
 
-        [parameter( Mandatory = $false, HelpMessage="Forms window title")]
+        [parameter( Mandatory = $false, HelpMessage = "Forms window title")]
         [string]$title = "PowerShell WebView",
 
-        [parameter( Mandatory = $false, HelpMessage="Forms window width")]
+        [parameter( Mandatory = $false, HelpMessage = "Forms window width")]
         [int]$Width = "600",
 
-        [parameter( Mandatory = $false, HelpMessage="Forms window height")]
+        [parameter( Mandatory = $false, HelpMessage = "Forms window height")]
         [int]$Height = "800",
 
-        [parameter( Mandatory = $false, HelpMessage="Customize the User-Agent presented in the HTTP Header.")]
+        [parameter( Mandatory = $false, HelpMessage = "Customize the User-Agent presented in the HTTP Header.")]
         $userAgent
     
     )
@@ -72,10 +72,24 @@ function Invoke-WebView2 {
         $web.CreationProperties.UserDataFolder = "$env:temp\PSAuthClientWebview2Cache\" 
         $web.Dock = "Fill"
         $web.source = $uri
-        if ( $userAgent ) { $web.add_CoreWebView2InitializationCompleted({$web.CoreWebView2.Settings.UserAgent = $userAgent}) }
+        if ( $userAgent ) { $web.add_CoreWebView2InitializationCompleted({ $web.CoreWebView2.Settings.UserAgent = $userAgent }) }
+
         # close form on completion (match redirectUri) navigation
         $web.Add_SourceChanged( {
             if ( $web.source.AbsoluteUri -match $UrlCloseConditionRegex )  { $Form.close() | Out-Null }
+        })
+
+        # Fallback for redirects that never raise SourceChanged (custom-scheme redirect_uris, 302 to a non-navigable target). 
+        # Only short-circuits code=/error= *query* responses, whose payload is reliably present on $e.Uri. 
+        # Implicit/hybrid #fragment landings carry no code=/error=, so they fall through to SourceChanged.
+        $web.Add_NavigationStarting({
+            param($_sender, $e)
+            Write-Debug "Invoke-WebView2 NavigationStarting: $($e.Uri)"
+            if ( $e.Uri -match 'code=|error=' -and $e.Uri -match $UrlCloseConditionRegex ) {
+                $Form.Tag = $e.Uri
+                $e.Cancel = $true            # prevent navigation to the redirectUri, so we can capture the URL and close the form
+                $Form.Close() | Out-Null
+            }
         })
     }
     # if WebView2 fails to initialize, try to use Windows.Forms.WebBrowser
@@ -86,13 +100,12 @@ function Invoke-WebView2 {
             $web = New-Object -TypeName System.Windows.Forms.WebBrowser -Property @{Width = $Width; Height = $Height; Url = $uri }
             # Close form on completion (match redirectUri) navigation
             $docCompletedEvent = {
-                if ( $web.Url.AbsoluteUri -match $UrlCloseConditionRegex )  { $form.Close() }
+                if ( $web.Url.AbsoluteUri -match $UrlCloseConditionRegex ) { $form.Close() }
             }
             $web.Add_DocumentCompleted($docCompletedEvent)
             $web.ScriptErrorsSuppressed = $true
             $title = $title + " [COMPATABILITY MODE]"
-    }
-        else { throw $_ }
+        } else { throw $_ }
     }
     # Create form
     $form = New-Object System.Windows.Forms.Form -Property @{Width=$Width;Height=$Height;Text=$title} -ErrorAction Stop
@@ -100,7 +113,8 @@ function Invoke-WebView2 {
     $form.Controls.Add($web)
     $form.Add_Shown( { $form.Activate() } )
     $form.ShowDialog() | Out-Null
-    $response = $web.Source
+    if ( $form.Tag ) { $response = [uri]::new($form.Tag) }
+    else { $response = $web.Source }
     $web.Dispose()
     return $response
 }
