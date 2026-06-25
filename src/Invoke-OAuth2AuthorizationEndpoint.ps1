@@ -56,7 +56,7 @@ function Invoke-OAuth2AuthorizationEndpoint {
 
     Implicit Grant, will return a access_token if successful.
     #>
-    [Alias('Invoke-AuthorizationEndpoint','authorize')]
+    [Alias('Invoke-AuthorizationEndpoint', 'authorize')]
     [OutputType([hashtable])]
     param(
         [parameter(Position = 0, Mandatory = $true)]
@@ -79,7 +79,7 @@ function Invoke-OAuth2AuthorizationEndpoint {
         [bool]$usePkce = $true,
 
         [parameter( Mandatory = $false)]
-        [ValidateSet("query","fragment","form_post")]
+        [ValidateSet("query", "fragment", "form_post")]
         [string]$response_mode,
 
         [parameter( Mandatory = $false)]
@@ -91,7 +91,8 @@ function Invoke-OAuth2AuthorizationEndpoint {
 
     # Determine which protocol is being used.
     if ( $response_type -eq "token" -or ($response_type -match "^code$" -and $scope -notmatch "openid" ) ) { $protocol = "OAUTH"; $nonce = $null }
-    else { $protocol = "OIDC"
+    else {
+        $protocol = "OIDC"
         # ensure scope contains openid for oidc flows
         if ( $scope -notmatch "openid" ) { Write-Warning "Invoke-OAuth2AuthorizationRequest: Added openid scope to request (OpenID requirement)."; $scope += " openid" }
         # ensure nonce is present for id_token validation
@@ -150,7 +151,7 @@ function Invoke-OAuth2AuthorizationEndpoint {
     $webViewParams.uri = $uri
     $webViewParams.title = "Authorization code flow"
     if ( $userAgent ) { $webViewParams.userAgent = $userAgent }
-    if ( $redirect_uri ) { $webViewParams.UrlCloseConditionRegex = "($($redirect_uri))?.*(?:code=([^&]+)|error=([^&]+))|^($($redirect_uri))" }
+    if ( $redirect_uri ) { $webViewParams.UrlCloseConditionRegex = "^$([regex]::Escape($redirect_uri)).*(?:code=([^&]+)|error=([^&]+))|^$([regex]::Escape($redirect_uri))" }
     else { $webViewParams.UrlCloseConditionRegex = "(?:code=([^&]+)|error=([^&]+))" }
     $webSource = Invoke-WebView2 @webViewParams
     
@@ -166,14 +167,13 @@ function Invoke-OAuth2AuthorizationEndpoint {
         catch { 
             if ( $_.Exception.Message -match "Access is denied." ) { throw "Unabled to start http.sys listener, please run as admin." }
             else { throw "http.sys listener failed, error: $($jobData.Exception.Message)" }
-        }
-        finally { Remove-Job $job }
+        } finally { Remove-Job $job }
         Write-Verbose "Invoke-OAuth2AuthorizationRequest: http.sys form_post request received."
         $webSource = @{ Fragment = $jobData; Query = $null }
     }
 
     # When the window closes (WebView2), the script will continue and retreive the depending on the response_mode and content.
-    if( $webSource.query -match "code=" ) {
+    if ( $webSource.query -match "code=" ) {
         $response = @{}
         $response.code = [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['code']
         $response.state = [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['state']
@@ -182,15 +182,13 @@ function Invoke-OAuth2AuthorizationEndpoint {
             if ( [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['access_token'] ) { $response.access_token = [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['access_token'] }
             if ( [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['id_token'] ) { $response.access_token = [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['id_token'] }
         }
-    } 
-    elseif ( $webSource.Query -match "error=" ) { 
+    } elseif ( $webSource.Query -match "error=" ) { 
         $errorDetails = [ordered]@{}
         $errorDetails.error = [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['error']
         $errorDetails.error_uri = [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['error_uri']
         $errorDetails.error_description = [System.Web.HttpUtility]::ParseQueryString($webSource.Query)['error_description']
         throw ($errorDetails | convertTo-Json)
-    }
-    elseif ( $webSource.Fragment -match "token|error=" ) {
+    } elseif ( $webSource.Fragment -match "token|error=" ) {
         $response = @{}
         foreach ( $item in (($webSource.Fragment -split "#|&") | Where-Object { $_ -ne "" }) ) { 
             $key = $item.split("=")[0]
@@ -200,8 +198,7 @@ function Invoke-OAuth2AuthorizationEndpoint {
         }
         if ( $protocol -eq "oidc" ) { $response.nonce = $nonce }
         if ( $webSource.Fragment -match "error=" ) { throw ($response | Select-Object * -ExcludeProperty state | convertTo-Json) }
-    }
-    else { throw "invalid response received" }
+    } else { throw "invalid response received" }
 
     # if code grant, add client_id, code_verifier and redirect_uri to output (needed for token exchange) 
     if ( $response_type -match "code" ) {
